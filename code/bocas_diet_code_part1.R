@@ -1,107 +1,87 @@
 #BOCAS DIET SEQUENCING DATA ANALYSIS
-
-#install phyloseq
-if (!require("BiocManager", quietly = TRUE))
-        install.packages("BiocManager")
-
 #Code to reproduce the statistical analysis of Clever et al. 2025 'Dietary resilience of coral reef fishes to habitat degradation'
+#Part 1: inspect, clean and rarify data
 
-BiocManager::install("phyloseq")
-
-#install microbiome 
-install.packages("remotes")
-remotes::install_github("microbiome/microbiome")
-
-#install reltools
-install.packages("remotes")
-remotes::install_github("DanielSprockett/reltools")
-
-library("phyloseq"); packageVersion("phyloseq")
-library("microbiome"); packageVersion("microbiome")
-library(data.table)
-library("devtools")
-library(tidyverse)
+# --- Load Required Libraries ---
+library(here)
+library(phyloseq)
+library(microbiome)
 library(dplyr)
-library(scales)
-library(grid)
-library(reshape2)
-library(reltools)
-library(cowplot) 
-library(ggplot2) 
-library(ggpubr) 
+library(ggplot2)
+library(cowplot)
+library(ggpubr)
+library(vegan)
+
+
+#function for removing unwanted taxa from dataset
+remove_bad_taxa <- function(ps, badTaxa) {
+  allTaxa <- taxa_names(ps)
+  allTaxa <- allTaxa[!(allTaxa %in% badTaxa)]
+  prune_taxa(allTaxa, ps)
+}
 
 #load the sequencing data (metabarcoding of fish stomach and intestinal)
-ps.BCS19 <- readRDS("~/Documents/Documents - yxcohakfnvzh’s MacBook Air/research/bocas_diet_parent/bocas_diet/data/curated_BCS19_phyloseq.rds")    
-ps.BCS19
+ps.BCS19 <- readRDS(here("data", "curated_BCS19_phyloseq.rds"))
 
-#examine sample data to see if any controls (e.g., negative extraction, or positive PCR) are still in there 
-sample.ps.BCS19<-sample_data(ps.BCS19)
-sample.ps.BCS19
+#examine sample data to see if any control samples (e.g., negative extraction or positive PCR controls) are still in there 
+sample.ps.BCS19 <- sample_data(ps.BCS19)
+#write.csv(as(sample_data(ps.BCS19), "data.frame"),
+         # file = "sample_BCS19_check_2025.csv",
+         # row.names = TRUE)
 
-#BCS19 one sample is H. puella fish gut tissue (positive PCR control), need remove: ML2112
-#remove sample ML2112
+#remove sample ML2112 H. puella fish gut tissue (positive PCR control)
 ps.BCS19 <- subset_samples(ps.BCS19, Fraction != "Hpuella fish gut tissue")
 ps.BCS19
 
-#extract the now modified sample table again as a data frame
+#extract the sample data as a data frame
 sampledataDF <- data.frame(sample_data(ps.BCS19))
 
 #modify the sample data for plotting by adding new columns for variables "Reef" and "Zone"
 #make the Site variable 'character'.
 sampledataDF$Site <- as.character(sampledataDF$Site)
+#add Zone and Reef columns
+sampledataDF <- sampledataDF %>%
+  mutate(
+    Zone = case_when(
+      endsWith(Site, "ALR") ~ "Inner bay",
+      endsWith(Site, "SIS") ~ "Inner bay",
+      endsWith(Site, "ROL") ~ "Inner bay",
+      endsWith(Site, "RNW") ~ "Inner bay disturbed",
+      endsWith(Site, "PBL") ~ "Inner bay disturbed",
+      endsWith(Site, "PST") ~ "Inner bay disturbed",
+      endsWith(Site, "SCR") ~ "Outer bay",
+      endsWith(Site, "PPR") ~ "Outer bay",
+      endsWith(Site, "CCR") ~ "Outer bay"
+    ),
+    Reef = case_when(
+      endsWith(Site, "ALR") ~ "ALR",
+      endsWith(Site, "SIS") ~ "SIS",
+      endsWith(Site, "ROL") ~ "ROL",
+      endsWith(Site, "RNW") ~ "RNW",
+      endsWith(Site, "PBL") ~ "PBL",
+      endsWith(Site, "PST") ~ "PST",
+      endsWith(Site, "SCR") ~ "SCR",
+      endsWith(Site, "PPR") ~ "PPR",
+      endsWith(Site, "CCR") ~ "CCR"
+    )
+  )
 
-#add Zone column
-sampledataDF  <- sampledataDF  %>%
-        mutate(Zone = case_when(
-                endsWith(Site, "ALR") ~ "Inner bay",
-                endsWith(Site, "SIS") ~ "Inner bay",
-                endsWith(Site, "ROL") ~ "Inner bay",
-                endsWith(Site, "RNW") ~ "Inner bay disturbed",
-                endsWith(Site, "PBL") ~ "Inner bay disturbed",
-                endsWith(Site, "PST") ~ "Inner bay disturbed",
-                endsWith(Site, "SCR") ~ "Outer bay",
-                endsWith(Site, "PPR") ~ "Outer bay",
-                endsWith(Site, "CCR") ~ "Outer bay"
-        ))
-
-
-#add Reef column
-sampledataDF  <- sampledataDF  %>%
-        mutate(Reef = case_when(
-                endsWith(Site, "ALR") ~ "ALR",
-                endsWith(Site, "SIS") ~ "SIS",
-                endsWith(Site, "ROL") ~ "ROL",
-                endsWith(Site, "RNW") ~ "RNW",
-                endsWith(Site, "PBL") ~ "PBL",
-                endsWith(Site, "PST") ~ "PST",
-                endsWith(Site, "SCR") ~ "SCR",
-                endsWith(Site, "PPR") ~ "PPR",
-                endsWith(Site, "CCR") ~ "CCR"
-        ))
 
 sampledataDF
 
-#add the modified sample data to phyloseq object (make new ps object)
+#add the modified sample data to phyloseq object
 ps.BCS19 <- merge_phyloseq(otu_table(ps.BCS19), tax_table(ps.BCS19), sample_data(sampledataDF))
 #check if it worked
 sample_data(ps.BCS19)
 
-#inspect tax table to identify the consumer sequences in the tax tables 
-#and see what needs to be removed and corrected in tax tables
-#extract the tax table
-tax.ps.BCS19<-tax_table(ps.BCS19)
-#if prefer to inspect the data in excel:
-write.csv(tax.ps.BCS19, file = "tax_BCS19.csv") 
-
-#Inspect nr of reads for the run
+#data summary
+#inspect nr of reads for the run
 summarize_phyloseq(ps.BCS19) #this is the whole run 2 species!
-
-#find out how many ASVs per sample
+#find out how many OTUs per sample
 data<-otu_table(ps.BCS19)
 data #taxa are rows
-#Calculate 
 totalNSamples <- ncol(data) #get the total nr of samples
-nSamplesWithOTU <- colSums(data>0) #get nr of #OTUs per sample
+nSamplesWithOTU <- colSums(data>0) #get nr of OTUs per sample
 nSamplesWithOTU
 max(nSamplesWithOTU)
 min(nSamplesWithOTU) 
@@ -109,33 +89,36 @@ min(nSamplesWithOTU)
 #SAMPLE SEQUENCING DEPTH PLOTS
 #including all sequences delineated as Metazoa while removing consumer sequences 
 #1. remove all fish consumer sequences (belonging to Hypoplectrus puella and Chaetodon capistratus)
-# Define the taxa you don't want (OTU IDs):
-badTaxa = c("c904a6966934ab3d91f6467603eb39460b42fe93", "77999e982c09ce41ca2a88e271088f94a99bb144")
-allTaxa = taxa_names(ps.BCS19)
-allTaxa <- allTaxa[!(allTaxa %in% badTaxa)]
-ps.BCS19.ex = prune_taxa(allTaxa, ps.BCS19)
-# new phyloseq object with just the taxa you kept.
-ps.BCS19.ex
 
-#keep only Metazoans
-#subset data to retain just OTUs delineated as kingdom Metazoa  
+#remove fish consumer sequences (Hypoplectrus puella and Chaetodon capistratus) 
+#define the taxa you don't want (OTU IDs):
+badTaxa <- c("c904a6966934ab3d91f6467603eb39460b42fe93", "77999e982c09ce41ca2a88e271088f94a99bb144")
+#new phyloseq object with retained taxa while excluding consumer sequences
+ps.BCS19.ex <- remove_bad_taxa(ps.BCS19, badTaxa)
+#keep only Metazoans (OTUs delineated as kingdom Metazoa)  
 ps.BCS19.ex.metazoa <- subset_taxa(ps.BCS19.ex, Kingdom=="Metazoa")
+ps.BCS19.ex.metazoa
 
-##now subset data by species creating two separated datasets for the diets of C. capistratus and H. puella
+tax.ps.BCS19.ex.metazoa<-tax_table(ps.BCS19.ex.metazoa)
+write.csv(tax.ps.BCS19.ex.metazoa, file = "tax_metazoa_test.csv") 
+
+
+#subset data by species creating two separate datasets for the diets of C. capistratus and H. puella
 ps.capis = subset_samples(ps.BCS19.ex.metazoa, Fraction=="Ccapistratus fish stomach content")
 ps.puella = subset_samples(ps.BCS19.ex.metazoa, Fraction=="Hpuella fish gut content")
 
-#remove empty OTUs
+#remove empty OTUs (OTUs with zero reads)
 ps.capis <-  prune_taxa(taxa_sums(ps.capis)>=1, ps.capis)
 ps.capis 
 ps.puella <-  prune_taxa(taxa_sums(ps.puella)>=1, ps.puella)
 ps.puella 
 
+#sequencing depth plots 
 #C. capistratus
-# Make a data frame with a column for the read counts of each sample
+#data frame with a column for the read counts of each sample
 sample_sum_capis <- data.frame(sum = sample_sums(ps.capis)) 
 # Histogram of sample read counts 
-fig1 <- ggplot(sample_sum_capis, aes(x = sum)) + 
+figS9A <- ggplot(sample_sum_capis, aes(x = sum)) + 
         geom_histogram(color = "black", fill = "grey", binwidth = 2500) +
         labs(title = '')+ #Distribution of sample sequencing depth
         labs(subtitle = 'Chaetodon capistratus')+
@@ -143,15 +126,14 @@ fig1 <- ggplot(sample_sum_capis, aes(x = sum)) +
         theme(plot.subtitle=element_text(face="italic"))+
         xlab("Read counts")+ 
         ylab("Frequency")+ 
-       #for Metazoan data plot C. capistratus used scale_x_continuous to prevent that zeros on x-axis get cut-off
-       scale_x_continuous(breaks=c(0,25000,50000,75000,95000)) 
-fig1
+        scale_x_continuous(breaks=c(0,25000,50000,75000,95000)) #use scale_x_continuous to prevent that zeros on x-axis get visually cut-off
+figS9A
 
 #H. puella
 # Make a data frame with a column for the read counts of each sample
 sample_sum_puella <- data.frame(sum = sample_sums(ps.puella)) 
 # Histogram of sample read counts 
-fig2 <- ggplot(sample_sum_puella, aes(x = sum)) + 
+figS9B <- ggplot(sample_sum_puella, aes(x = sum)) + 
         geom_histogram(color = "black", fill = "grey", binwidth = 2500) +
         labs(title = '')+ #empty title for combined figure panel
         labs(subtitle = 'Hypoplectrus puella')+
@@ -159,90 +141,89 @@ fig2 <- ggplot(sample_sum_puella, aes(x = sum)) +
         theme(plot.subtitle=element_text(face="italic"))+
         xlab("Read counts")+
         ylab("Frequency")
-fig2
+figS9B
 
 #Combine figures on one panel
-library(ggpubr)
-
-fig_both <- ggarrange(fig1, fig2, ncol=1, labels = c("A", "B")) #common.legend = TRUE, legend="right"
-fig_both <- annotate_figure(fig_both3, top = text_grob("Distribution of sample sequencing depth", 
+fig_both <- ggarrange(figS9A, figS9B, ncol=1, labels = c("A", "B")) #common.legend = TRUE, legend="right"
+fig_both <- annotate_figure(fig_both, top = text_grob("Distribution of sample sequencing depth", 
                                                         color = "black", face = "bold", size = 16))
-png("~/Desktop/Sequencing_depth_revision_2025_metazoa.png", height=20, width=16, units = 'cm', res = 600, bg = "white")
-fig_both
-dev.off()
-pdf("~/Desktop/Sequencing_depth_revision_2025_metazoa.pdf", height = 10, width = 8)
-fig_both
-dev.off()
+ggsave("Fig_S9A_S9B.pdf", plot = fig_both, width = 8, height = 10)
 
-# mean, max and min of sample read counts
-smin <- min(sample_sums(ps.capis))
-smean <- mean(sample_sums(ps.capis))
-smax <- max(sample_sums(ps.capis))
-smin
-smean
-smax
-
-smin <- min(sample_sums(ps.puella))
-smean <- mean(sample_sums(ps.puella))
-smax <- max(sample_sums(ps.puella))
-smin
-smean
-smax
+#summarize mean, max and min of sample read counts
+#C. capistratus
+smin.c <- min(sample_sums(ps.capis))
+smean.c <- mean(sample_sums(ps.capis))
+smax.c <- max(sample_sums(ps.capis))
+smin.c; smean.c; smax.c
+#H. puella
+smin.p <- min(sample_sums(ps.puella))
+smean.p <- mean(sample_sums(ps.puella))
+smax.p <- max(sample_sums(ps.puella))
+smin.p; smean.p; smax.p
 
 
-#### clean up H. puella ####  
-#exclude unlikely taxa for analysis e.g. primates, humans, mammalia, rodents, frogs (Anura), Arachnida, 
-#insecta delineated order level (not good to exclude because might be something else in real)
-badTaxa = c("0714ef8f2eba4ddc5335536b3c8407a5a2d38d64", "097f0412508fe1b6b3af160f2a6add5b9506f83b",
-            "13ce8d1461d6c2d0780849c9d02531b0b0178665", "19240420800b67492d1b0a16133cd7d62300bd69",
-            "2fb0c0918e83559362e7dcc89bdc0498718f44ce", "318d5af616441e47c508f22f3039b3d7e03eab48",
-            "3dcb54ffa31a085099c51b26a0e469a1a4501785", "42c0375b860b56d7f0d465cedeff51df73e83349",
-            "435814621b8b34a891d3f0e46a7cd41f35fb6401", "52c5f92cedcf77f77cf79baac4e36aa935f41edf",
-            "68e959ad3fa29ef53a8a6182c434b1e925d85bc5", "6911228560a2941a489732bef2e1d9cdfbefa1c1",
-            "7855e95c465e398d3c2e23e5a647c15f4b835851", "7969d79e8263c4500ad00c1c7cdef9ead9b9488d",
-            "84bf62b09d912a594faa2f641b9f871354595642", "863536472328dd6061f7e40d1fd90e9c09d8705a",
-            "877d6454f4b23a282ef2be3228c57f98f31ec3bd", "895b3991f6476e8d782d4047db62eb4628ba5185",
-            "8b5fb9b96d627aed100892bdfa83f7c18dabb36d", "8d66da307a9e56ee17e5a7ac631ce3922c000436",
-            "957198ff5610d8a2c8b7ac0edf3dff265d2e8539", "95fa8fa06b946da890e6ca68bd42b4ade9d2b30c",
-            "97a9d610b97fe61dae2d09e4f9babd5c967e159a", "9ebd0bcbae3f4ee1f10ba13d858e85af17744e67",
-            "a123293686ca0d58e8eccd67f32ab67a42382337", "b2c301821fb2c1b1ffb577f0efeafb549f832101",
-            "b3a2130de46f4af770d8f83719802d9cff575908", "b80be117b8324442dcf9a1d11e11f9a9875f8bd9",
-            "c1dad36beaa1db3c94d80d00d0770f0de17be74f", "cceaf3149c0baea1a2d2fb073f6a5799187401a0",
-            "e0b9cf7ac5652aec1e3658d9923665faeb5e0727", "e8cd2eb560da0598dc0cff7c31478c00f04f004c",
-            "ea3372b42107d874b2cfc3367609e46554d1383c", "f30be52ee7cdc5ea3060b18f23b2d186bb68b598",
-            "f461f7526aca7901ef8ec60abab88b202546b797", "fa1696ef3cfd0b1a6cb19b159d2021333918e00c",
-            "70729763e988cfabeec2be7cabffb0a52023b45b", "f61db60d7ad0f2a8f1375b25815e7e23149b6cfe", 
-            "096187575f2476f65787b73c490cd7022fc045c0","6911228560a2941a489732bef2e1d9cdfbefa1c1",
-            "f013fe8fffffab7a0067ce1ac3043ba7832631f6", "096187575f2476f65787b73c490cd7022fc045c0",
-            "7c8917c17b7e74ef324c4a433804daf801f0d1c6","a522c8996baf7b86e359785f910b87021eef7843",
-            "2fb0c0918e83559362e7dcc89bdc0498718f44ce","7026c3250185722d7256187faa0ef09087ef2b1f", 
-            "7c8917c17b7e74ef324c4a433804daf801f0d1c6","bacbd866fbeb7169d94bcfe17e72b6add7976f66")
+####clean up data H. puella (remove unlikely taxa) 
+#inspect and export tax table for manual review 
+tax.ps.puella<-tax_table(ps.puella)
+tax.ps.puella
+write.csv(tax.ps.puella, file = "tax_puella_test.csv") 
+#### not found in puella tax table: "0714ef8f2eba4ddc5335536b3c8407a5a2d38d64","3dcb54ffa31a085099c51b26a0e469a1a4501785","435814621b8b34a891d3f0e46a7cd41f35fb6401",
+#not found in puella tax table: "52c5f92cedcf77f77cf79baac4e36aa935f41edf", "68e959ad3fa29ef53a8a6182c434b1e925d85bc5","84bf62b09d912a594faa2f641b9f871354595642", "97a9d610b97fe61dae2d09e4f9babd5c967e159a",
+#not found in puella tax table:"a123293686ca0d58e8eccd67f32ab67a42382337", "b3a2130de46f4af770d8f83719802d9cff575908", "b80be117b8324442dcf9a1d11e11f9a9875f8bd9",  "e0b9cf7ac5652aec1e3658d9923665faeb5e0727",
+#not found in puella tax table:"ea3372b42107d874b2cfc3367609e46554d1383c","f461f7526aca7901ef8ec60abab88b202546b797", "f013fe8fffffab7a0067ce1ac3043ba7832631f6","895b3991f6476e8d782d4047db62eb4628ba5185",
+#not found in puella tax table: "f61db60d7ad0f2a8f1375b25815e7e23149b6cfe", 
+#e.g. primates, humans, mammalia, rodents, frogs (Anura), Arachnida, (but retain insecta delineated order level because might be something else in real)
+badTaxa = c("097f0412508fe1b6b3af160f2a6add5b9506f83b",
+            "13ce8d1461d6c2d0780849c9d02531b0b0178665", 
+            "2fb0c0918e83559362e7dcc89bdc0498718f44ce", 
+            "42c0375b860b56d7f0d465cedeff51df73e83349",
+            "6911228560a2941a489732bef2e1d9cdfbefa1c1", 
+            "7855e95c465e398d3c2e23e5a647c15f4b835851", 
+            "7969d79e8263c4500ad00c1c7cdef9ead9b9488d",
+            "863536472328dd6061f7e40d1fd90e9c09d8705a", #order level insecta! should not be removed?
+            "8d66da307a9e56ee17e5a7ac631ce3922c000436",
+            "877d6454f4b23a282ef2be3228c57f98f31ec3bd", 
+            "8b5fb9b96d627aed100892bdfa83f7c18dabb36d", 
+            "957198ff5610d8a2c8b7ac0edf3dff265d2e8539", #order level insecta! should not be removed?
+            "95fa8fa06b946da890e6ca68bd42b4ade9d2b30c",
+            "9ebd0bcbae3f4ee1f10ba13d858e85af17744e67", #Homo sapiens
+            "b2c301821fb2c1b1ffb577f0efeafb549f832101",
+            "cceaf3149c0baea1a2d2fb073f6a5799187401a0",
+            "c1dad36beaa1db3c94d80d00d0770f0de17be74f", 
+            "e8cd2eb560da0598dc0cff7c31478c00f04f004c",
+            "f30be52ee7cdc5ea3060b18f23b2d186bb68b598",
+            "fa1696ef3cfd0b1a6cb19b159d2021333918e00c",
+            "70729763e988cfabeec2be7cabffb0a52023b45b",
+            "096187575f2476f65787b73c490cd7022fc045c0",
+            "a522c8996baf7b86e359785f910b87021eef7843",
+            "7c8917c17b7e74ef324c4a433804daf801f0d1c6",
+            "7026c3250185722d7256187faa0ef09087ef2b1f", 
+            "318d5af616441e47c508f22f3039b3d7e03eab48",
+            "19240420800b67492d1b0a16133cd7d62300bd69",
+            "bacbd866fbeb7169d94bcfe17e72b6add7976f66")
 
-allTaxa <-  taxa_names(ps.puella)
-allTaxa <- allTaxa[!(allTaxa %in% badTaxa)]
-ps.puella.clean = prune_taxa(allTaxa, ps.puella)           
-ps.puella.clean #contains parasites, 414 taxa and 183 samples
+ps.puella.clean <- remove_bad_taxa(ps.puella, badTaxa)
+ps.puella.clean #still contains parasites, 401 taxa and 183 samples 
 
-#check for empty samples
-data<-otu_table(ps.puella.clean)
-nSamplesWithOTU <- colSums(data>0) #get nr of OTUs per sample
-nSamplesWithOTU
+###check for empty samples (samples with zero OTUs)
+otu_table_puella <- otu_table(ps.puella.clean)
+otu_presence_puella <- colSums(otu_table_puella > 0) # Number of OTUs per sample (how many OTUs present in each sample)
+# Find empty samples
+empty_samples_puella <- names(otu_presence_puella[otu_presence_puella == 0])
+print(empty_samples_puella) # List sample names with zero OTUs
 
 ###Identify gut parasite taxa to be removed for diet analysis
 #check for nematode OTUs
-ps.puella.clean.Nem<-subset_taxa(ps.puella.clean, Phylum == "Nematoda")
+"Nematoda" %in% tax_table(ps.puella.clean)[, "Phylum"]
+ps.puella.clean.Nem <- subset_taxa(ps.puella.clean, Phylum == "Nematoda")
 ps.puella.clean.Nem
 tax_table(ps.puella.clean.Nem) 
 
 #check for platyhelminthes
+"Platyhelminthes" %in% tax_table(ps.puella.clean)[, "Phylum"]
 ps.puella.clean.Plat<-subset_taxa(ps.puella.clean, Phylum == "Platyhelminthes")
 ps.puella.clean.Plat
 tax_table(ps.puella.clean.Plat) 
-
-#alternatively
-#inspect tax table for gut parasite OTUs in excel
-tax.puella.clean <- tax_table(ps.puella.clean)
-write.csv(tax.puella.clean, file="tax_puella_metazoa_clean_unrar.csv") 
 
 #Remove identified parasite OTUs from H. puella dataset 
 #Nematodes: Ascaridida, Trichuridae, Acanthocephala
@@ -255,7 +236,7 @@ write.csv(tax.puella.clean, file="tax_puella_metazoa_clean_unrar.csv")
 #Platyhelminthes: Trematodes (5 OTUs)
 #Platyhelminthes: Cestoda (18 OTUs)
 #Platyhelminthes: did not remove OTUs only identified at phylum level
-#Platyhelminthes: did not remove free-living nematodes (e.g., order Polycladida)
+#Platyhelminthes: did not remove free-living taxa (e.g., order Polycladida)
 
 #exclude 39 OTUs
 badTaxa = c("35dc866466597bc4847a2c319eebe4f7290e6975", "dd649367034085a2b26f3623c93f87c709a56eed", 
@@ -285,21 +266,12 @@ ps.puella.clean.ex = prune_taxa(allTaxa, ps.puella.clean)
 # new phyloseq object with just the taxa you kept.
 ps.puella.clean.ex
 
-#check again for nematodes
-ps.puella.clean.Nem<-subset_taxa(ps.puella.clean.ex, Phylum == "Nematoda")
-ps.puella.clean.Nem
-tax_table(ps.puella.clean.Nem)
-
-#check again for platyhelminthes
-ps.puella.clean.Plat<-subset_taxa(ps.puella.clean.ex, Phylum == "Platyhelminthes")
-ps.puella.clean.Plat
-tax_table(ps.puella.clean.Plat)                         
-
-#check for empty samples
-data<-otu_table(ps.puella.clean.ex)
-#write.csv(data, file="otu_bocas_puella_clean_unrar.csv")  #includes parasites
-nSamplesWithOTU <- colSums(data>0) #get nr of ASVs per sample
-nSamplesWithOTU
+###check for empty samples (samples with zero OTUs)
+otu_table_puella <- otu_table(ps.puella.clean.ex)
+otu_presence_puella <- colSums(otu_table_puella > 0) # Number of OTUs per sample (how many OTUs present in each sample)
+# Find empty samples
+empty_samples_puella <- names(otu_presence_puella[otu_presence_puella == 0])
+print(empty_samples_puella) # List sample names with zero OTUs
 
 #Remove 2 empty samples ML2162 and ML2293 
 ps.puella.clean.ex = subset_samples(ps.puella.clean.ex, MLID != c("ML2293","ML2162"))
@@ -326,47 +298,67 @@ badTaxa = c("0714ef8f2eba4ddc5335536b3c8407a5a2d38d64", "097f0412508fe1b6b3af160
             "ea3372b42107d874b2cfc3367609e46554d1383c", "f30be52ee7cdc5ea3060b18f23b2d186bb68b598",
             "f461f7526aca7901ef8ec60abab88b202546b797", "fa1696ef3cfd0b1a6cb19b159d2021333918e00c",
             "70729763e988cfabeec2be7cabffb0a52023b45b", "f61db60d7ad0f2a8f1375b25815e7e23149b6cfe", 
-            "096187575f2476f65787b73c490cd7022fc045c0","6911228560a2941a489732bef2e1d9cdfbefa1c1",
-            "f013fe8fffffab7a0067ce1ac3043ba7832631f6", "096187575f2476f65787b73c490cd7022fc045c0",
-            "2fb0c0918e83559362e7dcc89bdc0498718f44ce")
+            "096187575f2476f65787b73c490cd7022fc045c0",
+            "f013fe8fffffab7a0067ce1ac3043ba7832631f6" 
+            )
 
 allTaxa = taxa_names(ps.capis)
 allTaxa <- allTaxa[!(allTaxa %in% badTaxa)]
 ps.capis.clean = prune_taxa(allTaxa, ps.capis) 
 ps.capis.clean
 
-#check for empty samples
-data<-otu_table(ps.capis.clean)
-nSamplesWithOTU <- colSums(data>0) #get nr of ASVs per sample
-nSamplesWithOTU
-#no empty samples present
+###check for empty samples (samples with zero OTUs)
+otu.table.capis <- otu_table(ps.capis.clean)
+otu.presence.capis <- colSums(otu.table.capis > 0) # Number of OTUs per sample (how many OTUs present in each sample)
+# Find empty samples
+empty.samples.capis <- names(otu.presence.capis[otu.presence.capis == 0])
+print(empty.samples.capis) # List sample names with zero OTUs
 
 #check for parasites
-#check for nematodes 
-ps.capis.clean.Nem<-subset_taxa(ps.capis.clean, Phylum == "Nematoda")
-ps.capis.clean.Nem
-tax_table(ps.capis.clean.Nem)
-#Nematodes: No nematodes present in data
+#check for nematodes
+"Nematoda" %in% tax_table(ps.capis.clean)[, "Phylum"]
+#No nematodes present in data
 
+#check for platyhelminthes
+"Platyhelminthes" %in% tax_table(ps.capis.clean)[, "Phylum"]
 ps.capis.clean.Plat<-subset_taxa(ps.capis.clean, Phylum == "Platyhelminthes")
 ps.capis.clean.Plat
 tax_table(ps.capis.clean.Plat)  
-#Platyhelminthes: No parasitic taxa identified
+#Platyhelminthes: No parasitic taxa identified - the OTU identified as order Tricladida is likely not family Geoplanidae (Geoplanidae are terrestrial) 
 #Platyhelminthes: did not remove OTUs only identified at phylum level
-#Platyhelminthes: did not remove free-living nematodes (e.g., order Polycladida)
+#Platyhelminthes: did not remove free-living taxa (e.g., order Polycladida)
 
 #create new rds files for clean data (unrarified)
-write_rds(ps.capis.clean, "bocas_capis_metazoa_clean.unrar.rds", compress="none") 
-write_rds(ps.puella.clean.ex, "bocas_puella_metazoa_clean.ex.unrar.rds", compress="none") 
+saveRDS(ps.capis.clean, file = "bocas_capis_metazoa_clean.unrar.rds") 
+saveRDS(ps.puella.clean.ex, file = "bocas_puella_metazoa_clean.ex.unrar.rds") 
 
+#sum each sample and extract the OTU tables in preparation for the GLMMs
+otu.table.puella <- otu_table(ps.puella.clean.ex) 
+otu.table.capis <- otu_table(ps.capis.clean) 
+write.csv(otu.table.puella, "otu_table_puella_clean_2025.csv")
+write.csv(otu.table.capis, "otu_table_capis_clean_2025.csv")
+
+#sum the counts for each sample (columns in the OTU table)
+sample.sums.puella <- colSums(otu.table.puella)
+sample.sums.capis <- colSums(otu.table.capis)
+#create a dataframe with sample names as rows and TotalReads as a column
+total.reads.df.puella <- data.frame(Sample = names(sample.sums.puella), TotalReads = sample.sums.puella, row.names = NULL)
+total.reads.df.capis <- data.frame(Sample = names(sample.sums.capis), TotalReads = sample.sums.capis, row.names = NULL)
+#remove 2 samples in the capistratus data (to fit with data for GLMM)
+total.reads.df.capis <- total.reads.df.capis[!(total.reads.df.capis$Sample %in% c("BCS19-23-7_ML2267", "BCS19-16-5_ML2028")), ]
+
+#export the dataframe as a CSV file
+write.csv(total.reads.df.puella, file = "TotalReads_puella.csv", row.names = FALSE)
+write.csv(total.reads.df.capis, file = "TotalReads_capis.csv", row.names = FALSE)
+
+# Print the dataframe to preview
+print(total.reads.df)
 
 ###############
 ##Rarify data## 
 #load the clean data 
-ps.puella.unrar <- readRDS("~/Documents/Documents - yxcohakfnvzh’s MacBook Air/research/bocas_diet_parent/bocas_diet/data/bocas_puella_metazoa_clean.ex.unrar.rds")    
-ps.puella.unrar 
-ps.capis.unrar <- readRDS("~/Documents/Documents - yxcohakfnvzh’s MacBook Air/research/bocas_diet_parent/bocas_diet/data/bocas_capis_metazoa_clean.unrar.rds")    
-ps.capis.unrar
+ps.puella.unrar <- readRDS(here("data", "bocas_puella_metazoa_clean.ex.unrar.rds"))
+ps.capis.unrar <- readRDS(here("data", "bocas_capis_metazoa_clean.unrar.rds"))
 #Visualize rarefaction curves for samples with fewer sequences (<1000)    
 #with prune I keep samples
 ps.puella.unrar.few  <- prune_samples(sample_sums(ps.puella.unrar)<1000, ps.puella.unrar) #less than 1000
