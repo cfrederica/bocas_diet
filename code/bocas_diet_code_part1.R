@@ -29,7 +29,7 @@ sample.ps.BCS19 <- sample_data(ps.BCS19)
          # file = "sample_BCS19_check_2025.csv",
          # row.names = TRUE)
 
-#remove sample ML2112 H. puella fish gut tissue (positive PCR control)
+#remove sample ML2112 H.puella fish gut tissue (positive PCR control)
 ps.BCS19 <- subset_samples(ps.BCS19, Fraction != "Hpuella fish gut tissue")
 ps.BCS19
 
@@ -66,7 +66,6 @@ sampledataDF <- sampledataDF %>%
     )
   )
 
-
 sampledataDF
 
 #add the modified sample data to phyloseq object
@@ -76,7 +75,7 @@ sample_data(ps.BCS19)
 
 #data summary
 #inspect nr of reads for the run
-summarize_phyloseq(ps.BCS19) #this is the whole run 2 species!
+summarize_phyloseq(ps.BCS19) #this is the whole run 2 species
 #find out how many OTUs per sample
 data<-otu_table(ps.BCS19)
 data #taxa are rows
@@ -103,7 +102,7 @@ tax.ps.BCS19.ex.metazoa<-tax_table(ps.BCS19.ex.metazoa)
 write.csv(tax.ps.BCS19.ex.metazoa, file = "tax_metazoa_test.csv") 
 
 
-#subset data by species creating two separate datasets for the diets of C. capistratus and H. puella
+#subset data by species creating two separate datasets for the diets of C.capistratus and H.puella
 ps.capis = subset_samples(ps.BCS19.ex.metazoa, Fraction=="Ccapistratus fish stomach content")
 ps.puella = subset_samples(ps.BCS19.ex.metazoa, Fraction=="Hpuella fish gut content")
 
@@ -114,10 +113,10 @@ ps.puella <-  prune_taxa(taxa_sums(ps.puella)>=1, ps.puella)
 ps.puella 
 
 #sequencing depth plots 
-#C. capistratus
+#C.capistratus
 #data frame with a column for the read counts of each sample
 sample_sum_capis <- data.frame(sum = sample_sums(ps.capis)) 
-# Histogram of sample read counts 
+#histogram of sample read counts 
 figS9A <- ggplot(sample_sum_capis, aes(x = sum)) + 
         geom_histogram(color = "black", fill = "grey", binwidth = 2500) +
         labs(title = '')+ #Distribution of sample sequencing depth
@@ -129,10 +128,10 @@ figS9A <- ggplot(sample_sum_capis, aes(x = sum)) +
         scale_x_continuous(breaks=c(0,25000,50000,75000,95000)) #use scale_x_continuous to prevent that zeros on x-axis get visually cut-off
 figS9A
 
-#H. puella
-# Make a data frame with a column for the read counts of each sample
+#H.puella
+#make a data frame with a column for the read counts of each sample
 sample_sum_puella <- data.frame(sum = sample_sums(ps.puella)) 
-# Histogram of sample read counts 
+#histogram of sample read counts 
 figS9B <- ggplot(sample_sum_puella, aes(x = sum)) + 
         geom_histogram(color = "black", fill = "grey", binwidth = 2500) +
         labs(title = '')+ #empty title for combined figure panel
@@ -143,36 +142,29 @@ figS9B <- ggplot(sample_sum_puella, aes(x = sum)) +
         ylab("Frequency")
 figS9B
 
-#Combine figures on one panel
+#combine figures on one panel
 fig_both <- ggarrange(figS9A, figS9B, ncol=1, labels = c("A", "B")) #common.legend = TRUE, legend="right"
 fig_both <- annotate_figure(fig_both, top = text_grob("Distribution of sample sequencing depth", 
                                                         color = "black", face = "bold", size = 16))
 ggsave("Fig_S9A_S9B.pdf", plot = fig_both, width = 8, height = 10)
 
 #summarize mean, max and min of sample read counts
-#C. capistratus
+#C.capistratus
 smin.c <- min(sample_sums(ps.capis))
 smean.c <- mean(sample_sums(ps.capis))
 smax.c <- max(sample_sums(ps.capis))
 smin.c; smean.c; smax.c
-#H. puella
+#H.puella
 smin.p <- min(sample_sums(ps.puella))
 smean.p <- mean(sample_sums(ps.puella))
 smax.p <- max(sample_sums(ps.puella))
 smin.p; smean.p; smax.p
 
 
-####clean up data H. puella (remove unlikely taxa) 
-#inspect and export tax table for manual review 
+####clean up data H.puella (remove unlikely taxa) 
+#inspect tax table 
 tax.ps.puella<-tax_table(ps.puella)
 tax.ps.puella
-write.csv(tax.ps.puella, file = "tax_puella_test.csv") 
-#### not found in puella tax table: "0714ef8f2eba4ddc5335536b3c8407a5a2d38d64","3dcb54ffa31a085099c51b26a0e469a1a4501785","435814621b8b34a891d3f0e46a7cd41f35fb6401",
-#not found in puella tax table: "52c5f92cedcf77f77cf79baac4e36aa935f41edf", "68e959ad3fa29ef53a8a6182c434b1e925d85bc5","84bf62b09d912a594faa2f641b9f871354595642", "97a9d610b97fe61dae2d09e4f9babd5c967e159a",
-#not found in puella tax table:"a123293686ca0d58e8eccd67f32ab67a42382337", "b3a2130de46f4af770d8f83719802d9cff575908", "b80be117b8324442dcf9a1d11e11f9a9875f8bd9",  "e0b9cf7ac5652aec1e3658d9923665faeb5e0727",
-#not found in puella tax table:"ea3372b42107d874b2cfc3367609e46554d1383c","f461f7526aca7901ef8ec60abab88b202546b797", "f013fe8fffffab7a0067ce1ac3043ba7832631f6","895b3991f6476e8d782d4047db62eb4628ba5185",
-#not found in puella tax table: "f61db60d7ad0f2a8f1375b25815e7e23149b6cfe", 
-#e.g. primates, humans, mammalia, rodents, frogs (Anura), Arachnida, (but retain insecta delineated order level because might be something else in real)
 badTaxa = c("097f0412508fe1b6b3af160f2a6add5b9506f83b",
             "13ce8d1461d6c2d0780849c9d02531b0b0178665", 
             "2fb0c0918e83559362e7dcc89bdc0498718f44ce", 
@@ -180,13 +172,13 @@ badTaxa = c("097f0412508fe1b6b3af160f2a6add5b9506f83b",
             "6911228560a2941a489732bef2e1d9cdfbefa1c1", 
             "7855e95c465e398d3c2e23e5a647c15f4b835851", 
             "7969d79e8263c4500ad00c1c7cdef9ead9b9488d",
-            "863536472328dd6061f7e40d1fd90e9c09d8705a", #order level insecta! should not be removed?
+            "863536472328dd6061f7e40d1fd90e9c09d8705a", 
             "8d66da307a9e56ee17e5a7ac631ce3922c000436",
             "877d6454f4b23a282ef2be3228c57f98f31ec3bd", 
             "8b5fb9b96d627aed100892bdfa83f7c18dabb36d", 
-            "957198ff5610d8a2c8b7ac0edf3dff265d2e8539", #order level insecta! should not be removed?
+            "957198ff5610d8a2c8b7ac0edf3dff265d2e8539", 
             "95fa8fa06b946da890e6ca68bd42b4ade9d2b30c",
-            "9ebd0bcbae3f4ee1f10ba13d858e85af17744e67", #Homo sapiens
+            "9ebd0bcbae3f4ee1f10ba13d858e85af17744e67", 
             "b2c301821fb2c1b1ffb577f0efeafb549f832101",
             "cceaf3149c0baea1a2d2fb073f6a5799187401a0",
             "c1dad36beaa1db3c94d80d00d0770f0de17be74f", 
@@ -207,12 +199,12 @@ ps.puella.clean #still contains parasites, 401 taxa and 183 samples
 
 ###check for empty samples (samples with zero OTUs)
 otu_table_puella <- otu_table(ps.puella.clean)
-otu_presence_puella <- colSums(otu_table_puella > 0) # Number of OTUs per sample (how many OTUs present in each sample)
+otu_presence_puella <- colSums(otu_table_puella > 0) # Number of OTUs per sample 
 # Find empty samples
 empty_samples_puella <- names(otu_presence_puella[otu_presence_puella == 0])
 print(empty_samples_puella) # List sample names with zero OTUs
 
-###Identify gut parasite taxa to be removed for diet analysis
+###identify gut parasite taxa to be removed for diet analysis
 #check for nematode OTUs
 "Nematoda" %in% tax_table(ps.puella.clean)[, "Phylum"]
 ps.puella.clean.Nem <- subset_taxa(ps.puella.clean, Phylum == "Nematoda")
@@ -225,19 +217,7 @@ ps.puella.clean.Plat<-subset_taxa(ps.puella.clean, Phylum == "Platyhelminthes")
 ps.puella.clean.Plat
 tax_table(ps.puella.clean.Plat) 
 
-#Remove identified parasite OTUs from H. puella dataset 
-#Nematodes: Ascaridida, Trichuridae, Acanthocephala
-#Nematodes: Rhabditida: "many are facultatively parasitic, living temporarily in wounds or passing through the gut" https://www.k-state.edu/parasitology/classes/625nematode19.html
-#Nematodes: all OTUs only delineated at Phylum level Nematoda
-#Nematodes: all OTUs only delineated at Class Chromadorea 
-#Nematodes: "324f4eb96d5286d234b4459a631200ae420299de",#would not remove is more likely free living
-#Nematodes: "427427e1b1ae66b2a72e9bc796ffc7ae75e0fc80",#would not remove is more likely free living
-#Nematodes: "695f81e9ef8392c3081117050f2df54a840d4189",#would not remove is more likely free living
-#Platyhelminthes: Trematodes (5 OTUs)
-#Platyhelminthes: Cestoda (18 OTUs)
-#Platyhelminthes: did not remove OTUs only identified at phylum level
-#Platyhelminthes: did not remove free-living taxa (e.g., order Polycladida)
-
+#remove identified parasite OTUs from H.puella dataset 
 #exclude 39 OTUs
 badTaxa = c("35dc866466597bc4847a2c319eebe4f7290e6975", "dd649367034085a2b26f3623c93f87c709a56eed", 
             "16c0f953176c3bfa8f411898ef0498e87f3343e7", "984e01217ca75bcc539dad85906110c6c8139ced",
@@ -263,21 +243,24 @@ badTaxa = c("35dc866466597bc4847a2c319eebe4f7290e6975", "dd649367034085a2b26f362
 allTaxa = taxa_names(ps.puella.clean)
 allTaxa <- allTaxa[!(allTaxa %in% badTaxa)]
 ps.puella.clean.ex = prune_taxa(allTaxa, ps.puella.clean)
-# new phyloseq object with just the taxa you kept.
+#new phyloseq object with just the taxa you kept.
 ps.puella.clean.ex
 
 ###check for empty samples (samples with zero OTUs)
 otu_table_puella <- otu_table(ps.puella.clean.ex)
 otu_presence_puella <- colSums(otu_table_puella > 0) # Number of OTUs per sample (how many OTUs present in each sample)
-# Find empty samples
+#find empty samples
 empty_samples_puella <- names(otu_presence_puella[otu_presence_puella == 0])
 print(empty_samples_puella) # List sample names with zero OTUs
 
-#Remove 2 empty samples ML2162 and ML2293 
+#remove 2 empty samples ML2162 and ML2293 
 ps.puella.clean.ex = subset_samples(ps.puella.clean.ex, MLID != c("ML2293","ML2162"))
 ps.puella.clean.ex
 
 #### clean up C.capistratus ####  
+#inspect tax table 
+tax.ps.capis<-tax_table(ps.capis)
+tax.ps.capis
 #remove bad taxa 
 badTaxa = c("0714ef8f2eba4ddc5335536b3c8407a5a2d38d64", "097f0412508fe1b6b3af160f2a6add5b9506f83b",
             "13ce8d1461d6c2d0780849c9d02531b0b0178665", "19240420800b67492d1b0a16133cd7d62300bd69",
@@ -310,23 +293,9 @@ ps.capis.clean
 ###check for empty samples (samples with zero OTUs)
 otu.table.capis <- otu_table(ps.capis.clean)
 otu.presence.capis <- colSums(otu.table.capis > 0) # Number of OTUs per sample (how many OTUs present in each sample)
-# Find empty samples
+#find empty samples
 empty.samples.capis <- names(otu.presence.capis[otu.presence.capis == 0])
 print(empty.samples.capis) # List sample names with zero OTUs
-
-#check for parasites
-#check for nematodes
-"Nematoda" %in% tax_table(ps.capis.clean)[, "Phylum"]
-#No nematodes present in data
-
-#check for platyhelminthes
-"Platyhelminthes" %in% tax_table(ps.capis.clean)[, "Phylum"]
-ps.capis.clean.Plat<-subset_taxa(ps.capis.clean, Phylum == "Platyhelminthes")
-ps.capis.clean.Plat
-tax_table(ps.capis.clean.Plat)  
-#Platyhelminthes: No parasitic taxa identified - the OTU identified as order Tricladida is likely not family Geoplanidae (Geoplanidae are terrestrial) 
-#Platyhelminthes: did not remove OTUs only identified at phylum level
-#Platyhelminthes: did not remove free-living taxa (e.g., order Polycladida)
 
 #create new rds files for clean data (unrarified)
 saveRDS(ps.capis.clean, file = "bocas_capis_metazoa_clean.unrar.rds") 
@@ -335,8 +304,8 @@ saveRDS(ps.puella.clean.ex, file = "bocas_puella_metazoa_clean.ex.unrar.rds")
 #sum each sample and extract the OTU tables in preparation for the GLMMs
 otu.table.puella <- otu_table(ps.puella.clean.ex) 
 otu.table.capis <- otu_table(ps.capis.clean) 
-write.csv(otu.table.puella, "otu_table_puella_clean_2025.csv")
-write.csv(otu.table.capis, "otu_table_capis_clean_2025.csv")
+#write.csv(otu.table.puella, "otu_table_puella_clean.csv")
+#write.csv(otu.table.capis, "otu_table_capis_clean.csv")
 
 #sum the counts for each sample (columns in the OTU table)
 sample.sums.puella <- colSums(otu.table.puella)
@@ -347,19 +316,19 @@ total.reads.df.capis <- data.frame(Sample = names(sample.sums.capis), TotalReads
 #remove 2 samples in the capistratus data (to fit with data for GLMM)
 total.reads.df.capis <- total.reads.df.capis[!(total.reads.df.capis$Sample %in% c("BCS19-23-7_ML2267", "BCS19-16-5_ML2028")), ]
 
-#export the dataframe as a CSV file
+#export the dataframe as a csv file
 write.csv(total.reads.df.puella, file = "TotalReads_puella.csv", row.names = FALSE)
 write.csv(total.reads.df.capis, file = "TotalReads_capis.csv", row.names = FALSE)
 
-# Print the dataframe to preview
+# print the dataframe to preview
 print(total.reads.df)
 
 ###############
-##Rarify data## 
+##rarify data## 
 #load the clean data 
 ps.puella.unrar <- readRDS(here("data", "bocas_puella_metazoa_clean.ex.unrar.rds"))
 ps.capis.unrar <- readRDS(here("data", "bocas_capis_metazoa_clean.unrar.rds"))
-#Visualize rarefaction curves for samples with fewer sequences (<1000)    
+#visualize rarefaction curves for samples with fewer sequences (<1000)    
 #with prune I keep samples
 ps.puella.unrar.few  <- prune_samples(sample_sums(ps.puella.unrar)<1000, ps.puella.unrar) #less than 1000
 ps.puella.unrar.few
@@ -377,13 +346,13 @@ sample_sums(ps.puella.unrar)
 # puella: exclude samples that have less than 200 sequences or so and rarify to that depth
 # capis: 12000
 
-#Now based to the examined curves above retain only samples above a certain nr of reads in each dataset 
+#now based to the examined curves above retain only samples above a certain nr of reads in each dataset 
 ps.puella.unrar.few2  <- prune_samples(sample_sums(ps.puella.unrar)>200, ps.puella.unrar) #this is metazoans - maybe better use >100?
 ps.capis.unrar.few2  <- prune_samples(sample_sums(ps.capis.unrar)>12000, ps.capis.unrar) 
 ps.puella.unrar.few2 
 ps.capis.unrar.few2
 
-#Remove OTUs that are not present in any sample
+#remove OTUs that are not present in any sample
 any(taxa_sums(ps.puella.unrar.few2) == 0)
 ntaxa(ps.puella.unrar.few2)
 ps.puella.unrar.few3 <- prune_taxa(taxa_sums(ps.puella.unrar.few2) > 0, ps.puella.unrar.few2)
@@ -399,15 +368,15 @@ saveRDS(ps.puella.unrar.few3, "ps.puella.unrar.ex.rds") #unrarified but samples 
 #save rds file
 saveRDS(ps.capis.unrar.few3, "ps.capis.unrar.ex.rds") #unrarified but samples removed with low sequences
 
-#Rarefy to minimum depth (200 sequences)
-#Puella
+#rarefy to minimum depth (200 sequences)
+#H.puella
 set.seed(1)
 ps_puella_rar = rarefy_even_depth(ps.puella.unrar.few2, rngseed=1, min(sample_sums(ps.puella.unrar.few2)), replace=F)
 ps_puella_rar
 saveRDS(ps_puella_rar, "ps.puella.rar.rds")
 
-#Rarefy to minimum depth (12000 sequences)
-#Capis
+#rarefy to minimum depth (12000 sequences)
+#C.capistratus
 set.seed(1)
 ps_capis_rar = rarefy_even_depth(ps.capis.unrar.few2, rngseed=1, min(sample_sums(ps.capis.unrar.few2)), replace=F)
 ps_capis_rar
