@@ -1,8 +1,8 @@
 #BOCAS DIET SEQUENCING DATA ANALYSIS
 #Code to reproduce the statistical analysis of Clever et al. 2025 'Dietary resilience of coral reef fishes to habitat degradation'
-#Part 1: inspect, clean and rarify data
+#Part 1: inspect, clean and rarefy data
 
-# --- Load Required Libraries ---
+# --- Load Required Packages ---
 library(here)
 library(phyloseq)
 library(microbiome)
@@ -20,14 +20,11 @@ remove_bad_taxa <- function(ps, badTaxa) {
   prune_taxa(allTaxa, ps)
 }
 
-#load the sequencing data (metabarcoding of fish stomach and intestinal)
+#load the sequencing data (metabarcoding of fish stomach and intestinal contents of two species: Chaetodon capistratus, Hypoplectrus puella)
 ps.BCS19 <- readRDS(here("data", "curated_BCS19_phyloseq.rds"))
 
 #examine sample data to see if any control samples (e.g., negative extraction or positive PCR controls) are still in there 
 sample.ps.BCS19 <- sample_data(ps.BCS19)
-#write.csv(as(sample_data(ps.BCS19), "data.frame"),
-         # file = "sample_BCS19_check_2025.csv",
-         # row.names = TRUE)
 
 #remove sample ML2112 H.puella fish gut tissue (positive PCR control)
 ps.BCS19 <- subset_samples(ps.BCS19, Fraction != "Hpuella fish gut tissue")
@@ -98,10 +95,6 @@ ps.BCS19.ex <- remove_bad_taxa(ps.BCS19, badTaxa)
 ps.BCS19.ex.metazoa <- subset_taxa(ps.BCS19.ex, Kingdom=="Metazoa")
 ps.BCS19.ex.metazoa
 
-tax.ps.BCS19.ex.metazoa<-tax_table(ps.BCS19.ex.metazoa)
-write.csv(tax.ps.BCS19.ex.metazoa, file = "tax_metazoa_test.csv") 
-
-
 #subset data by species creating two separate datasets for the diets of C.capistratus and H.puella
 ps.capis = subset_samples(ps.BCS19.ex.metazoa, Fraction=="Ccapistratus fish stomach content")
 ps.puella = subset_samples(ps.BCS19.ex.metazoa, Fraction=="Hpuella fish gut content")
@@ -143,10 +136,10 @@ figS9B <- ggplot(sample_sum_puella, aes(x = sum)) +
 figS9B
 
 #combine figures on one panel
-fig_both <- ggarrange(figS9A, figS9B, ncol=1, labels = c("A", "B")) #common.legend = TRUE, legend="right"
-fig_both <- annotate_figure(fig_both, top = text_grob("Distribution of sample sequencing depth", 
-                                                        color = "black", face = "bold", size = 16))
-ggsave("Fig_S9A_S9B.pdf", plot = fig_both, width = 8, height = 10)
+#fig_both <- ggarrange(figS9A, figS9B, ncol=1, labels = c("A", "B")) #common.legend = TRUE, legend="right"
+#fig_both <- annotate_figure(fig_both, top = text_grob("Distribution of sample sequencing depth", 
+#                                                        color = "black", face = "bold", size = 16))
+#ggsave("Fig_S9A_S9B.pdf", plot = fig_both, width = 8, height = 10)
 
 #summarize mean, max and min of sample read counts
 #C.capistratus
@@ -304,8 +297,8 @@ saveRDS(ps.puella.clean.ex, file = "bocas_puella_metazoa_clean.ex.unrar.rds")
 #sum each sample and extract the OTU tables in preparation for the GLMMs
 otu.table.puella <- otu_table(ps.puella.clean.ex) 
 otu.table.capis <- otu_table(ps.capis.clean) 
-#write.csv(otu.table.puella, "otu_table_puella_clean.csv")
-#write.csv(otu.table.capis, "otu_table_capis_clean.csv")
+write.csv(otu.table.puella, "otu_table_puella_clean.csv")
+write.csv(otu.table.capis, "otu_table_capis_clean.csv")
 
 #sum the counts for each sample (columns in the OTU table)
 sample.sums.puella <- colSums(otu.table.puella)
@@ -317,11 +310,12 @@ total.reads.df.capis <- data.frame(Sample = names(sample.sums.capis), TotalReads
 total.reads.df.capis <- total.reads.df.capis[!(total.reads.df.capis$Sample %in% c("BCS19-23-7_ML2267", "BCS19-16-5_ML2028")), ]
 
 #export the dataframe as a csv file
-write.csv(total.reads.df.puella, file = "TotalReads_puella.csv", row.names = FALSE)
-write.csv(total.reads.df.capis, file = "TotalReads_capis.csv", row.names = FALSE)
+#write.csv(total.reads.df.puella, file = "TotalReads_puella.csv", row.names = FALSE)
+#write.csv(total.reads.df.capis, file = "TotalReads_capis.csv", row.names = FALSE)
 
 # print the dataframe to preview
-print(total.reads.df)
+print(total.reads.df.capis)
+print(total.reads.df.puella)
 
 ###############
 ##rarify data## 
@@ -329,14 +323,18 @@ print(total.reads.df)
 ps.puella.unrar <- readRDS(here("data", "bocas_puella_metazoa_clean.ex.unrar.rds"))
 ps.capis.unrar <- readRDS(here("data", "bocas_capis_metazoa_clean.unrar.rds"))
 #visualize rarefaction curves for samples with fewer sequences (<1000)    
-#with prune I keep samples
+#with prune we keep samples
 ps.puella.unrar.few  <- prune_samples(sample_sums(ps.puella.unrar)<1000, ps.puella.unrar) #less than 1000
 ps.puella.unrar.few
 rarecurve(otu_table(ps.puella.unrar.few), step=5, cex=0.5, label = FALSE)
+#we might need to transpose the data
+rarecurve(t(as(otu_table(ps.puella.unrar.few), "matrix")), step = 5, cex = 0.5, label = FALSE)
 
 ps.capis.unrar.few  <- prune_samples(sample_sums(ps.capis.unrar)<15000, ps.capis.unrar) #less than 1000
 ps.capis.unrar.few
 rarecurve(otu_table(ps.capis.unrar.few), step=5, cex=0.5, label = FALSE)
+#we might need to transpose the data
+rarecurve(t(as(otu_table(ps.capis.unrar.few), "matrix")), step = 5, cex = 0.5, label = FALSE)
 
 #check min nr reads in a sample
 summarize_phyloseq(ps.capis.unrar)  
@@ -347,7 +345,7 @@ sample_sums(ps.puella.unrar)
 # capis: 12000
 
 #now based to the examined curves above retain only samples above a certain nr of reads in each dataset 
-ps.puella.unrar.few2  <- prune_samples(sample_sums(ps.puella.unrar)>200, ps.puella.unrar) #this is metazoans - maybe better use >100?
+ps.puella.unrar.few2  <- prune_samples(sample_sums(ps.puella.unrar)>200, ps.puella.unrar) 
 ps.capis.unrar.few2  <- prune_samples(sample_sums(ps.capis.unrar)>12000, ps.capis.unrar) 
 ps.puella.unrar.few2 
 ps.capis.unrar.few2
