@@ -36,7 +36,7 @@ ps.capis.unrar.few3 <- ordered_reefs2
 
 # Plot NMDS from phyloseq object
 # For jaccard plot use capis.ord.jaccard instead capis.ord
-fig3a = plot_ordination(ps.capis.unrar.few3, capis.ord, type="sites", shape="Zone", color = "Reef") + theme_cowplot()+ # shape ="Zone" #type="sites", 
+fig4a = plot_ordination(ps.capis.unrar.few3, capis.ord, type="sites", shape="Zone", color = "Reef") + theme_cowplot()+ # shape ="Zone" #type="sites", 
   geom_point(size = 2.8) + 
   stat_ellipse(aes(color = factor(Zone)), geom = "polygon", level=0.95, alpha=0, type = "t", size =.6, show.legend = F)+ 
   scale_color_manual(values = c("royalblue1","lightskyblue","powderblue","mediumaquamarine",  "darkseagreen2","palegreen", "chocolate", "chocolate1", "lightsalmon","royalblue1","darkseagreen", "chocolate2"), # "darkseagreen", "chocolate2" 
@@ -48,7 +48,7 @@ fig3a = plot_ordination(ps.capis.unrar.few3, capis.ord, type="sites", shape="Zon
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_rect(fill = "transparent",colour = NA), plot.background = element_rect(fill = "transparent",colour = NA),
         legend.background = element_rect(fill = "transparent", color=NA), legend.key = element_rect(fill = "transparent", color = NA), panel.border = element_rect(fill = NA, color="black"))
 
-fig3a
+fig4a
 
 # H. puella identify and remove the outliers
 # Loop to create dataframe with coordinates for each distance separately and then combine
@@ -102,7 +102,7 @@ ordered_reefs_puella2 <-set_treatment_levels(ps_puella_boc_no_outlier_NMDS, "Zon
 ps_puella_boc_no_outlier_NMDS <- ordered_reefs_puella2
 
 #plot NMDS from phyloseq object
-fig3b = plot_ordination(ps_puella_boc_no_outlier_NMDS, puella.ord, type="sites", shape="Zone", color = "Reef") + theme_cowplot()+ # shape ="Zone" #type="sites", 
+fig4b = plot_ordination(ps_puella_boc_no_outlier_NMDS, puella.ord, type="sites", shape="Zone", color = "Reef") + theme_cowplot()+ # shape ="Zone" #type="sites", 
   geom_point(size = 2.8) + 
   stat_ellipse(aes(color = factor(Zone)), geom = "polygon", level=0.95, alpha=0, type = "t", size =.6, show.legend = F)+ 
   scale_color_manual(values = c("royalblue1","lightskyblue","powderblue","mediumaquamarine",  "darkseagreen2","palegreen", "chocolate", "chocolate1", "lightsalmon","royalblue1","darkseagreen", "chocolate2"), # "darkseagreen", "chocolate2" 
@@ -115,12 +115,12 @@ fig3b = plot_ordination(ps_puella_boc_no_outlier_NMDS, puella.ord, type="sites",
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_rect(fill = "transparent",colour = NA), plot.background = element_rect(fill = "transparent",colour = NA),
         legend.background = element_rect(fill = "transparent", color=NA), legend.key = element_rect(fill = "transparent", color = NA), panel.border = element_rect(fill = NA, color="black"))
 
-fig3b
+fig4b
 
-# COMBINE 2 FIGURES
+# Combine 2 figures
 library(ggpubr)
-fig4_A_B_bray <- ggarrange(fig3a,fig3b,ncol=2,labels = c("A", "B"), common.legend = TRUE, legend = "right")
-fig4_A_B_bray
+fig4_a_b_bray <- ggarrange(fig3a,fig3b,ncol=2,labels = c("A", "B"), common.legend = TRUE, legend = "right")
+fig4_a_b_bray
 
 figS10_jaccard <- ggarrange(fig3a,fig3b,ncol=2,labels = c("A", "B"),common.legend = TRUE, legend = "right")
 figS10_jaccard
