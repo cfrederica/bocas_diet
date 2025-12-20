@@ -1,6 +1,6 @@
 #BOCAS DIET SEQUENCING DATA ANALYSIS
-#Code to reproduce the statistical analysis of Clever et al. 2025 'Dietary resilience of coral reef fishes to habitat degradation'
-#Part 1: inspect, clean and rarefy data
+# Code to reproduce the statistical analysis of Clever et al. 2025 'Dietary resilience of coral reef fishes to habitat degradation'
+# Part 1: inspect, clean and rarefy data
 
 # --- Load Required Packages ---
 library(here)
@@ -81,8 +81,6 @@ nSamplesWithOTU
 max(nSamplesWithOTU)
 min(nSamplesWithOTU) 
 
-# SAMPLE SEQUENCING DEPTH PLOTS
-# Including all sequences delineated as Metazoa while removing consumer sequences 
 # Remove all fish consumer sequences (belonging to Hypoplectrus puella and Chaetodon capistratus)
 # Define the taxa you don't want (OTU IDs):
 badTaxa <- c("c904a6966934ab3d91f6467603eb39460b42fe93", "77999e982c09ce41ca2a88e271088f94a99bb144")
@@ -102,7 +100,8 @@ ps.capis
 ps.puella <-  prune_taxa(taxa_sums(ps.puella)>=1, ps.puella)
 ps.puella 
 
-# Generate the sequencing depth plots 
+# SAMPLE SEQUENCING DEPTH PLOTS
+# Including all sequences delineated as Metazoa while removing consumer sequences 
 # 1. C.capistratus
 # Data frame with a column for the read counts of each sample
 sample_sum_capis <- data.frame(sum = sample_sums(ps.capis)) 
@@ -246,6 +245,7 @@ print(empty_samples_puella) # List sample names with zero OTUs
 ps.puella.clean.ex = subset_samples(ps.puella.clean.ex, MLID != c("ML2293","ML2162"))
 ps.puella.clean.ex
 
+#############################################
 # Clean up C.capistratus (remove unlikely taxa) 
 # Inspect tax table 
 tax.ps.capis<-tax_table(ps.capis)
@@ -286,9 +286,12 @@ otu.presence.capis <- colSums(otu.table.capis > 0) # Number of OTUs per sample (
 empty.samples.capis <- names(otu.presence.capis[otu.presence.capis == 0])
 print(empty.samples.capis) # List sample names with zero OTUs
 
-# Create new rds files for clean data (unrarified)
+
+#############################################################################
+# Create new rds files for clean data (unrarified, metazoan)
 saveRDS(ps.capis.clean, file = "bocas_capis_metazoa_clean_unrar.rds") 
 saveRDS(ps.puella.clean.ex, file = "bocas_puella_metazoa_clean_ex_unrar.rds") 
+#############################################################################
 
 # Sum each sample and extract the OTU tables in preparation for the GLMMs
 otu.table.puella <- otu_table(ps.puella.clean.ex) 
@@ -315,20 +318,21 @@ print(total.reads.df.puella)
 
 #################
 ## Rarify data ## 
+#################
+
 # Load the clean data 
 ps.puella.unrar <- readRDS(here("data", "bocas_puella_metazoa_clean_ex_unrar.rds"))
 ps.capis.unrar <- readRDS(here("data", "bocas_capis_metazoa_clean_unrar.rds"))
+
 # Visualize rarefaction curves for samples with fewer sequences (<1000)    
 ps.puella.unrar.few  <- prune_samples(sample_sums(ps.puella.unrar)<1000, ps.puella.unrar) #less than 1000 
 ps.puella.unrar.few
-rarecurve(otu_table(ps.puella.unrar.few), step=5, cex=0.5, label = FALSE)
-# We might need to transpose the data
+# Transpose the data and plot rarefaction curve
 rarecurve(t(as(otu_table(ps.puella.unrar.few), "matrix")), step = 5, cex = 0.5, label = FALSE)
 
 ps.capis.unrar.few  <- prune_samples(sample_sums(ps.capis.unrar)<15000, ps.capis.unrar) #less than 1000
 ps.capis.unrar.few
-rarecurve(otu_table(ps.capis.unrar.few), step=5, cex=0.5, label = FALSE)
-# We might need to transpose the data
+# Transpose the data and plot rarefaction curve
 rarecurve(t(as(otu_table(ps.capis.unrar.few), "matrix")), step = 5, cex = 0.5, label = FALSE)
 
 # Check min nr reads in a sample
@@ -357,8 +361,8 @@ ps.capis.unrar.few3  <- prune_taxa(taxa_sums(ps.capis.unrar.few2) > 0, ps.capis.
 ntaxa(ps.capis.unrar.few3)
 
 # Save rds files
-saveRDS(ps.puella.unrar.few3, "ps_puella_unrar_ex.rds") #unrarified but samples removed with low sequences
-saveRDS(ps.capis.unrar.few3, "ps_capis_unrar_ex.rds") #unrarified but samples removed with low sequences
+saveRDS(ps.puella.unrar.few3, "ps_puella_unrar_ex.rds") #unrarified but OTUs removed that are not present in any sample
+saveRDS(ps.capis.unrar.few3, "ps_capis_unrar_ex.rds") #unrarified but OTUs removed that are not present in any sample
 
 # H.puella rarefy to minimum depth (200 sequences)
 set.seed(1)
