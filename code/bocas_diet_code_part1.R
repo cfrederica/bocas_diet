@@ -287,8 +287,8 @@ empty.samples.capis <- names(otu.presence.capis[otu.presence.capis == 0])
 print(empty.samples.capis) # List sample names with zero OTUs
 
 # Create new rds files for clean data (unrarified)
-saveRDS(ps.capis.clean, file = "bocas_capis_metazoa_clean.unrar.rds") 
-saveRDS(ps.puella.clean.ex, file = "bocas_puella_metazoa_clean.ex.unrar.rds") 
+saveRDS(ps.capis.clean, file = "bocas_capis_metazoa_clean_unrar.rds") 
+saveRDS(ps.puella.clean.ex, file = "bocas_puella_metazoa_clean_ex_unrar.rds") 
 
 # Sum each sample and extract the OTU tables in preparation for the GLMMs
 otu.table.puella <- otu_table(ps.puella.clean.ex) 
@@ -316,8 +316,8 @@ print(total.reads.df.puella)
 #################
 ## Rarify data ## 
 # Load the clean data 
-ps.puella.unrar <- readRDS(here("data", "bocas_puella_metazoa_clean.ex.unrar.rds"))
-ps.capis.unrar <- readRDS(here("data", "bocas_capis_metazoa_clean.unrar.rds"))
+ps.puella.unrar <- readRDS(here("data", "bocas_puella_metazoa_clean_ex_unrar.rds"))
+ps.capis.unrar <- readRDS(here("data", "bocas_capis_metazoa_clean_unrar.rds"))
 # Visualize rarefaction curves for samples with fewer sequences (<1000)    
 ps.puella.unrar.few  <- prune_samples(sample_sums(ps.puella.unrar)<1000, ps.puella.unrar) #less than 1000 
 ps.puella.unrar.few
@@ -357,20 +357,20 @@ ps.capis.unrar.few3  <- prune_taxa(taxa_sums(ps.capis.unrar.few2) > 0, ps.capis.
 ntaxa(ps.capis.unrar.few3)
 
 # Save rds files
-saveRDS(ps.puella.unrar.few3, "ps.puella.unrar.ex.rds") #unrarified but samples removed with low sequences
-saveRDS(ps.capis.unrar.few3, "ps.capis.unrar.ex.rds") #unrarified but samples removed with low sequences
+saveRDS(ps.puella.unrar.few3, "ps_puella_unrar_ex.rds") #unrarified but samples removed with low sequences
+saveRDS(ps.capis.unrar.few3, "ps_capis_unrar_ex.rds") #unrarified but samples removed with low sequences
 
 # H.puella rarefy to minimum depth (200 sequences)
 set.seed(1)
 ps_puella_rar = rarefy_even_depth(ps.puella.unrar.few2, rngseed=1, min(sample_sums(ps.puella.unrar.few2)), replace=F)
 ps_puella_rar
-saveRDS(ps_puella_rar, "ps.puella.rar.rds")
+saveRDS(ps_puella_rar, "ps_puella_rar.rds")
 
 # C.capistratus rarefy to minimum depth (12000 sequences)
 set.seed(1)
 ps_capis_rar = rarefy_even_depth(ps.capis.unrar.few2, rngseed=1, min(sample_sums(ps.capis.unrar.few2)), replace=F)
 ps_capis_rar
-saveRDS(ps_capis_rar, "ps.capis.rar.rds")
+saveRDS(ps_capis_rar, "ps_capis_rar.rds")
 
 
 
