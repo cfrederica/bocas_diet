@@ -321,27 +321,27 @@ print(total.reads.df.puella)
 #################
 
 # Load the clean data 
-ps.puella.unrar <- readRDS(here("data", "bocas_puella_metazoa_clean_ex_unrar.rds"))
 ps.capis.unrar <- readRDS(here("data", "bocas_capis_metazoa_clean_unrar.rds"))
+ps.puella.unrar <- readRDS(here("data", "bocas_puella_metazoa_clean_ex_unrar.rds"))
 
 # Visualize rarefaction curves for samples with fewer sequences (<1000)    
-ps.puella.unrar.few  <- prune_samples(sample_sums(ps.puella.unrar)<1000, ps.puella.unrar) #less than 1000 
-ps.puella.unrar.few
-# Transpose the data and plot rarefaction curve
-rarecurve(t(as(otu_table(ps.puella.unrar.few), "matrix")), step = 5, cex = 0.5, label = FALSE)
-
 ps.capis.unrar.few  <- prune_samples(sample_sums(ps.capis.unrar)<15000, ps.capis.unrar) #less than 1000
 ps.capis.unrar.few
 # Transpose the data and plot rarefaction curve
 rarecurve(t(as(otu_table(ps.capis.unrar.few), "matrix")), step = 5, cex = 0.5, label = FALSE)
+
+ps.puella.unrar.few  <- prune_samples(sample_sums(ps.puella.unrar)<1000, ps.puella.unrar) #less than 1000 
+ps.puella.unrar.few
+# Transpose the data and plot rarefaction curve
+rarecurve(t(as(otu_table(ps.puella.unrar.few), "matrix")), step = 5, cex = 0.5, label = FALSE)
 
 # Check min nr reads in a sample
 summarize_phyloseq(ps.capis.unrar)  
 summarize_phyloseq(ps.puella.unrar) 
 sample_sums(ps.capis.unrar)
 sample_sums(ps.puella.unrar)
-# puella: exclude samples that have less than 200 sequences or so and rarify to that depth
-# capis: 12000
+# H.puella: exclude samples that have less than 200 sequences and rarify to that depth
+# C.capistratus: exclude samples that have less than 12000 and rarify to that depth
 
 # Now based to the examined curves above retain only samples above a certain nr of reads in each dataset 
 ps.puella.unrar.few2  <- prune_samples(sample_sums(ps.puella.unrar)>200, ps.puella.unrar) 
@@ -361,20 +361,20 @@ ps.capis.unrar.few3  <- prune_taxa(taxa_sums(ps.capis.unrar.few2) > 0, ps.capis.
 ntaxa(ps.capis.unrar.few3)
 
 # Save rds files
-saveRDS(ps.puella.unrar.few3, "ps_puella_unrar_ex.rds") #unrarified but OTUs removed that are not present in any sample
-saveRDS(ps.capis.unrar.few3, "ps_capis_unrar_ex.rds") #unrarified but OTUs removed that are not present in any sample
-
-# H.puella rarefy to minimum depth (200 sequences)
-set.seed(1)
-ps_puella_rar = rarefy_even_depth(ps.puella.unrar.few2, rngseed=1, min(sample_sums(ps.puella.unrar.few2)), replace=F)
-ps_puella_rar
-saveRDS(ps_puella_rar, "ps_puella_rar.rds")
+saveRDS(ps.capis.unrar.few3, "ps_capis_unrar_ex.rds") #unrarified but but retained only samples above a certain nr of reads and OTUs removed that are not present in any sample
+saveRDS(ps.puella.unrar.few3, "ps_puella_unrar_ex.rds") #unrarified but retained only samples above a certain nr of reads and OTUs removed that are not present in any sample
 
 # C.capistratus rarefy to minimum depth (12000 sequences)
 set.seed(1)
 ps_capis_rar = rarefy_even_depth(ps.capis.unrar.few2, rngseed=1, min(sample_sums(ps.capis.unrar.few2)), replace=F)
 ps_capis_rar
 saveRDS(ps_capis_rar, "ps_capis_rar.rds")
+
+# H.puella rarefy to minimum depth (200 sequences)
+set.seed(1)
+ps_puella_rar = rarefy_even_depth(ps.puella.unrar.few2, rngseed=1, min(sample_sums(ps.puella.unrar.few2)), replace=F)
+ps_puella_rar
+saveRDS(ps_puella_rar, "ps_puella_rar.rds")
 
 
 
