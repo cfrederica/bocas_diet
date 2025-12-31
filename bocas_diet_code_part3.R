@@ -354,13 +354,13 @@ figS7B <- ggplot(data = dat.puella.Kn, mapping = aes(x=Zone, y=Kn)) +
 
 figS7B
 
-#combine plots
+# Combine plots
 fig_overall <- ggarrange(figS7A,figS7B, ncol=1) #labels = c("A", "B") #common.legend = TRUE, legend="right"
 fig_overall
 
 fig_overall <-annotate_figure(fig_overall, top = text_grob("Fish condition across zones", 
                                                            face = "bold", size = 16))
-#save plot as pdf
+# Save plot as PDF
 pdf("Fish_condition_overall.pdf", height=10, width=6)
 fig_overall
 dev.off()
@@ -469,7 +469,7 @@ fig2B
 fig_2All <- ggarrange(fig2A,fig2B, ncol=1) #labels = c("A", "B") #common.legend = TRUE, legend="right"
 fig_2All
 
-# Save plot as pdf
+# Save plot as PDF
 pdf("Fish_condition_by_length.pdf", height=10, width=6)
 fig_2All
 dev.off()
@@ -584,11 +584,11 @@ lnVR_all <- bind_rows(lnVR_capis, lnVR_puella)
 print(lnVR_all)
 
 
-#Residual Spread Plot 
-#Simple model
-#C.capistratus
+# Residual Spread Plot 
+# Simple model
+# C.capistratus
 resids <- resid(lm(Kn ~ Zone, data = dat.capis.Kn))
-#H.puella
+# H.puella
 resids2 <- resid(lm(Kn ~ Zone, data = dat.puella.Kn))
 
 resid_df <- data.frame(
@@ -605,10 +605,11 @@ resid_df_puella <- data.frame(
 
 
 # Fit the complex model (if not already done above)
-#C.capistratus
+# C.capistratus
 #lm1 <- lm(Kn ~ logL * Zone, data = dat.capis.Kn)
-#H. puella
+# H. puella
 #lm2 <- lm(Kn ~ logL * Zone, data = dat.puella.Kn)
+
 # Extract absolute residuals
 resids1 <- abs(resid(lm1))
 resids2 <- abs(resid(lm2))
@@ -629,6 +630,7 @@ resid_df_puella <- data.frame(
 )
 
 # Plot
+# C.capistratus
 p_spread <- ggplot(resid_df_capis, aes(x = Zone, y = resids1, fill = Zone, color = Zone)) +
   geom_boxplot(alpha = 0.3, outlier.shape = NA) +
   geom_jitter(width = 0.2, alpha = 0.7, size = 1.8) +
@@ -660,7 +662,7 @@ p_spread <- ggplot(resid_df_capis, aes(x = Zone, y = resids1, fill = Zone, color
   )
 p_spread
 
-#puella
+# H.puella
 p_spread2 <- ggplot(resid_df_puella, aes(x = Zone, y = resids2, fill = Zone, color = Zone)) +
   geom_boxplot(alpha = 0.3, outlier.shape = NA) +
   geom_jitter(width = 0.2, alpha = 0.7, size = 1.8) +
