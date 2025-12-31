@@ -196,7 +196,7 @@ outliers_puella_minus
 #114 
 #-0.4770164
 
-#Remove the identified outliers from the data
+# Remove the identified outliers from the data
 outliers.c <- dat.capis[c(76,77),] #make sure the numbers relate to the correct samples (depends on order in dataset)
 outliers.p <- dat[c(114,136,148),] 
 
@@ -210,14 +210,14 @@ dat.puella_without_outliers
 #C. capistratus
 lm1.c2 <- lm(logW ~ logLcm, data = dat.capis_without_outliers)
 summary(lm1.c2)
-#plot model  
+# Plot model  
 plot(logW~logLcm, data=dat.capis_without_outliers, xlab="logL(cm)", ylab="logW(g)", main="Chaetodon capistratus")
 abline(lm(logW ~ logLcm, data = dat.capis_without_outliers), col = "red")
 
-#H. puella 
+# H. puella 
 lm1.p2 <- lm(logW ~ logLcm, data = dat.puella_without_outliers)
 summary(lm1.p2)
-#plot model 
+# Plot model 
 plot(logW~logLcm, data=dat.puella_without_outliers, xlab="logL(cm)", ylab="logW(g)", main="Hypoplectrus puella")
 abline(lm(logW ~ logLcm, data = dat.puella_without_outliers), col = "red")
 
