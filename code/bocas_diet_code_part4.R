@@ -1,4 +1,4 @@
-# Bocas diet code part 3
+
 # Length-weight regression-based outlier removal, Relative Condition Factor (Kn), Kn-logLxZone regression and plots, Log-variance Ratios
 # Load packages
 library(FSA)
@@ -14,8 +14,9 @@ library(ggplot2)
 library(ggpubr)
 library(cowplot)
 
-# Load the fish length and weight data for weight-length regression #(load Kn data below from line 233)
-df <- read.csv(here("data", "bocas_fish_length_weight.csv"))
+# Load the fish length and weight data for weight-length regression in preparation of calculating relative condition (Kn)
+# This dataset already contains the calculated Kn values (the calculation is described below from line 229)
+df <- read.csv(here("data", "bocas_fish_condition.csv"))
 # Pull out data for each fish species
 # C.capistratus
 dat.capis <- df %>%
@@ -89,19 +90,21 @@ group_by(dat.puella, Zone) %>%
 # C.capistratus
 shapiro.test(dat.capis$Total_length)
 shapiro.test(dat.capis$Wet_weight)
+# Length
 kruskal.test(Total_length ~ Zone, data = dat.capis) #chi-squared = 43.971, df = 2, p-value = 2.83e-10 #p < 0.001
 dunnTest(Total_length ~ Zone, data = dat.capis, method = "bh")
-
+# Weight
 kruskal.test(Wet_weight ~ Zone, data = dat.capis) #chi-squared = 43.66, df = 2, p-value = 3.306e-10 #p < 0.001
 dunnTest(Wet_weight ~ Zone, data = dat.capis, method = "bh")
 
 # H.puella
 shapiro.test(dat.puella$Total_length) #p-value = 1.894e-05
 shapiro.test(dat.puella$Wet_weight) #W = 0.99098, p-value = 0.3925
+# Length
 kruskal.test(Total_length ~ Zone, data = dat.puella) #chi-squared = 15.154, df = 2, p-value = 0.000512 #p < 0.001
 dunnTest(Total_length ~ Zone, data = dat.puella, method = "bh")
 
-# Because wet weight was normally dist. - should run ANOVA not Kruskal
+# Weight - wet weight was normally dist. - run ANOVA instead of Kruskal
 anova.puella <- aov(Wet_weight ~ Zone, data = dat.puella) 
 summary(anova.puella) #F =7.226   p = 0.000989 ***  
 TukeyHSD(anova.puella)
@@ -131,7 +134,7 @@ lm1.p <- lm(logW~logLcm, data=dat.puella)
 lm1.p
 summary(lm1.p)
 
-# Visualize log weight versus log length as in log a versus log b - this plot can be used to identify outliers-see Froese 2006) 
+# Visualize log weight versus log length as in log a versus log b to check for outliers - see Froese 2006) 
 # C.capistratus
 plot(logW~logLcm, data=dat.capis, xlab="logL(cm)", ylab="logW(g)", main="Chaetodon capistratus")
 abline(lm(logW ~ logLcm, data = dat.capis), col = "red")
@@ -196,9 +199,9 @@ outliers_puella_minus
 #114 
 #-0.4770164
 
-# Remove the identified outliers from the data
-outliers.c <- dat.capis[c(76,77),] #make sure the numbers relate to the correct samples (depends on order in dataset)
-outliers.p <- dat[c(114,136,148),] 
+# Remove the identified outliers from the data (make sure the numbers relate to the correct samples - depends on order in dataset)
+outliers.c <- dat.capis[c(76,77),] # Fish ID:PST_C14, PST_C15
+outliers.p <- dat.puella[c(114,136,148),] # Fish ID: ROL_H13, SCR_H17, SIS_H11
 
 dat.capis_without_outliers <- dat.capis %>% anti_join(outliers.c)
 dat.capis_without_outliers
@@ -230,44 +233,31 @@ abline(lm(logW ~ logLcm, data = dat.puella_without_outliers), col = "red")
 # -3.460  + (2.765*log(8.1))  #use log length in cm 
 # 2.324004131 is the predicted log weight if the fish is 8.1 cm 
 # In Excel: calculate Kn values for each fish individual (natural log obtained with LN function in Excel)
-# Load the relative condition fator (Kn) data - outliers removed for Kn calculation (based on weight-length regression above)
-df.Kn <- read.csv(here("data", "bocas_fish_condition.csv"))
-# Pull out data for each fish species
-# C.capistratus
-dat.capis.Kn <- df.Kn %>%
-  filter(Species == "Chaetodon capistratus")
-# H.puella
-dat.puella.Kn <- df.Kn %>%
-  filter(Species == "Hypoplectrus puella")
+
+# Rename (or load if newly calculated) the data for analysis of relative condition factor (Kn) - outliers removed for Kn calculation (based on weight-length regression above)
+dat.capis.Kn <- dat.capis_without_outliers
+dat.puella.Kn <- dat.puella_without_outliers
 
 # Log transform the data 
 # C.capistratus
-dat.capis.Kn$logL <- log(dat.capis.Kn$Total_Length) #this is in mm
+dat.capis.Kn$logL <- log(dat.capis.Kn$Total_length) #this is in mm
 dat.capis.Kn$logLcm <- log(dat.capis.Kn$TLcm) #Total length in cm
-dat.capis.Kn$logW <- log(dat.capis.Kn$Wet_Weight)
+dat.capis.Kn$logW <- log(dat.capis.Kn$Wet_weight)
 # H.puella
-dat.puella.Kn$logL <- log(dat.puella.Kn$Total_Length) #this is in mm
+dat.puella.Kn$logL <- log(dat.puella.Kn$Total_length) #this is in mm
 dat.puella.Kn$logLcm <- log(dat.puella.Kn$TLcm) #Total length in cm
-dat.puella.Kn$logW <- log(dat.puella.Kn$Wet_Weight)
+dat.puella.Kn$logW <- log(dat.puella.Kn$Wet_weight)
 
-#arrange data by Zone
-dat.capis.Kn <- dat.capis.Kn %>%
-  arrange(Zone)
-dat.capis.Kn
-
-dat.puella.Kn<- dat.puella.Kn %>%
-  arrange(Zone)
-dat.puella.Kn
-
+# Zone order
 dat.capis.Kn$Zone <- factor(dat.capis.Kn$Zone, levels = c('Outer bay','Inner bay','Inner bay disturbed'))
 dat.puella.Kn$Zone <- factor(dat.puella.Kn$Zone, levels = c('Outer bay','Inner bay','Inner bay disturbed'))
 
-#test if fish condition (Kn) data is normally distributed
+# Test if fish condition (Kn) data is normally distributed
 shapiro.test(dat.capis.Kn$Kn) 
 shapiro.test(dat.puella.Kn$Kn) 
 
-#Test for differences in Kn values among 3 zones
-#C. capistratus
+# Test for differences in Kn values among 3 zones
+# C. capistratus
 kruskal.test(Kn~Zone,data=dat.capis.Kn)
 #Kruskal-Wallis rank sum test
 #data:  Kn by Zone
@@ -377,7 +367,7 @@ summary(lm1)
 anova(lm1)
 
 set.seed(1200)
-lm2 <- lm(dat.puella.Kn$Kn ~ logLcm*Zone, data=dat.puella.Kn) #(mm for length)
+lm2 <- lm(dat.puella.Kn$Kn ~ logLcm*Zone, data=dat.puella.Kn) 
 lm2
 summary(lm2)
 anova(lm2)
@@ -425,7 +415,7 @@ p.puella
 colvec <- c("royalblue3","mediumaquamarine", "chocolate1")
 
 # Plot Kn as a function of length as continuous variable
-fig2A <- ggplot(data = dat.capis.Kn, mapping = aes(x=Total_Length, y=Kn)) + 
+fig2A <- ggplot(data = dat.capis.Kn, mapping = aes(x=Total_length, y=Kn)) + 
   geom_point(aes(color=Zone),alpha=0.7) +
   geom_smooth(method=lm, color='black',linewidth=0.5)+
   scale_colour_manual(values=colvec,name = "Zone")+
@@ -445,7 +435,7 @@ fig2A <- ggplot(data = dat.capis.Kn, mapping = aes(x=Total_Length, y=Kn)) +
 fig2A
 
 
-fig2B <- ggplot(data = dat.puella.Kn, mapping = aes(x=Total_Length,y=Kn)) + 
+fig2B <- ggplot(data = dat.puella.Kn, mapping = aes(x=Total_length,y=Kn)) + 
   geom_point(aes(color=Zone),alpha=0.7) +
   geom_smooth(method=lm, color='black',linewidth=0.5)+
   scale_colour_manual(values=colvec,name = "Zone")+
@@ -606,9 +596,9 @@ resid_df_puella <- data.frame(
 
 # Fit the complex model (if not already done above)
 # C.capistratus
-#lm1 <- lm(Kn ~ logL * Zone, data = dat.capis.Kn)
+#lm1 <- lm(Kn ~ logLcm*Zone, data = dat.capis.Kn)
 # H. puella
-#lm2 <- lm(Kn ~ logL * Zone, data = dat.puella.Kn)
+#lm2 <- lm(Kn ~ logLcm*Zone, data = dat.puella.Kn)
 
 # Extract absolute residuals
 resids1 <- abs(resid(lm1))
