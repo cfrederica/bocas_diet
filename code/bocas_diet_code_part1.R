@@ -66,8 +66,6 @@ sampledataDF
 
 # Add the modified sample data to phyloseq object
 ps.BCS19 <- merge_phyloseq(otu_table(ps.BCS19), tax_table(ps.BCS19), sample_data(sampledataDF))
-#check if it worked
-sample_data(ps.BCS19)
 
 # Data summary
 # Inspect nr of reads for the run
@@ -135,7 +133,7 @@ figS9B
 #fig_both <- ggarrange(figS9A, figS9B, ncol=1, labels = c("A", "B")) #common.legend = TRUE, legend="right"
 #fig_both <- annotate_figure(fig_both, top = text_grob("Distribution of sample sequencing depth", 
 #                                                        color = "black", face = "bold", size = 16))
-#ggsave("Fig_S9A_S9B.pdf", plot = fig_both, width = 8, height = 10)
+#ggsave("Fig_S9.pdf", plot = fig_both, width = 8, height = 10)
 
 # Summarize mean, max and min of sample read counts
 # C.capistratus
@@ -287,34 +285,10 @@ empty.samples.capis <- names(otu.presence.capis[otu.presence.capis == 0])
 print(empty.samples.capis) # List sample names with zero OTUs
 
 
-#############################################################################
-# Create new rds files for clean data (unrarified, metazoan)
+# Safe new rds files for clean data (unrarified, metazoan)
 saveRDS(ps.capis.clean, file = "bocas_capis_metazoa_clean_unrar.rds") 
-saveRDS(ps.puella.clean.ex, file = "bocas_puella_metazoa_clean_ex_unrar.rds") 
-#############################################################################
+saveRDS(ps.puella.clean.ex, file = "bocas_puella_metazoa_clean_unrar.rds") 
 
-# Sum each sample and extract the OTU tables in preparation for the GLMMs
-otu.table.puella <- otu_table(ps.puella.clean.ex) 
-otu.table.capis <- otu_table(ps.capis.clean) 
-write.csv(otu.table.puella, "otu_table_puella_clean.csv")
-write.csv(otu.table.capis, "otu_table_capis_clean.csv")
-
-# Sum the counts for each sample (columns in the OTU table)
-sample.sums.puella <- colSums(otu.table.puella)
-sample.sums.capis <- colSums(otu.table.capis)
-# Create a dataframe with sample names as rows and TotalReads as a column
-total.reads.df.puella <- data.frame(Sample = names(sample.sums.puella), TotalReads = sample.sums.puella, row.names = NULL)
-total.reads.df.capis <- data.frame(Sample = names(sample.sums.capis), TotalReads = sample.sums.capis, row.names = NULL)
-# Remove 2 samples in the capistratus data (to fit with data for GLMM)
-total.reads.df.capis <- total.reads.df.capis[!(total.reads.df.capis$Sample %in% c("BCS19-23-7_ML2267", "BCS19-16-5_ML2028")), ]
-
-# Export the dataframe as a csv file
-#write.csv(total.reads.df.puella, file = "TotalReads_puella.csv", row.names = FALSE)
-#write.csv(total.reads.df.capis, file = "TotalReads_capis.csv", row.names = FALSE)
-
-# Print the dataframe to preview
-print(total.reads.df.capis)
-print(total.reads.df.puella)
 
 #################
 ## Rarify data ## 
@@ -322,7 +296,7 @@ print(total.reads.df.puella)
 
 # Load the clean data 
 ps.capis.unrar <- readRDS(here("data", "bocas_capis_metazoa_clean_unrar.rds"))
-ps.puella.unrar <- readRDS(here("data", "bocas_puella_metazoa_clean_ex_unrar.rds"))
+ps.puella.unrar <- readRDS(here("data", "bocas_puella_metazoa_clean_unrar.rds"))
 
 # Visualize rarefaction curves for samples with fewer sequences (<1000)    
 ps.capis.unrar.few  <- prune_samples(sample_sums(ps.capis.unrar)<15000, ps.capis.unrar) #less than 1000
@@ -340,14 +314,14 @@ summarize_phyloseq(ps.capis.unrar)
 summarize_phyloseq(ps.puella.unrar) 
 sample_sums(ps.capis.unrar)
 sample_sums(ps.puella.unrar)
-# H.puella: exclude samples that have less than 200 sequences and rarify to that depth
-# C.capistratus: exclude samples that have less than 12000 and rarify to that depth
 
 # Now based to the examined curves above retain only samples above a certain nr of reads in each dataset 
-ps.puella.unrar.few2  <- prune_samples(sample_sums(ps.puella.unrar)>200, ps.puella.unrar) 
+# C.capistratus: exclude samples that have less than 12000 and rarify to that depth
+# H.puella: exclude samples that have less than 200 sequences and rarify to that depth
 ps.capis.unrar.few2  <- prune_samples(sample_sums(ps.capis.unrar)>12000, ps.capis.unrar) 
-ps.puella.unrar.few2 
+ps.puella.unrar.few2  <- prune_samples(sample_sums(ps.puella.unrar)>200, ps.puella.unrar) 
 ps.capis.unrar.few2
+ps.puella.unrar.few2 
 
 # Remove OTUs that are not present in any sample
 any(taxa_sums(ps.puella.unrar.few2) == 0)
@@ -376,6 +350,8 @@ ps_puella_rar = rarefy_even_depth(ps.puella.unrar.few2, rngseed=1, min(sample_su
 ps_puella_rar
 saveRDS(ps_puella_rar, "ps_puella_rar.rds")
 
+####
+####
 
 
 
