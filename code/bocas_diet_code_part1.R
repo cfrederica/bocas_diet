@@ -12,7 +12,7 @@ library(cowplot)
 library(ggpubr)
 library(vegan)
 
-# --- Function for removing unwanted taxa from datasets ---
+# --- Function for removing unwanted taxa from phyloseq object ---
 remove_bad_taxa <- function(ps, badTaxa) {
   allTaxa <- taxa_names(ps)
   allTaxa <- allTaxa[!(allTaxa %in% badTaxa)]
