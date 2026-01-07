@@ -1,11 +1,27 @@
 
-# Load the unrarified data with low sequences samples removed 
-ps.capis.unrar.few3 <- readRDS(here("data", "ps.capis.unrar.ex.rds"))
-ps.puella.unrar.few3 <- readRDS(here("data", "ps.puella.unrar.ex.rds"))
+# --- Load Required Packages ---
 
-# Load the rarified data
-#ps.capis.rar  <- readRDS(here("data", "ps.capis.rar.rds"))
-#ps.puella.rar  <- readRDS(here("data", "ps.puella.rar.rds"))
+library(phyloseq)
+library(microbiome)
+library(dplyr) 
+library(ggplot2)
+library(cowplot)
+library(ggpubr)
+library(vegan)
+library(sf)
+library(ggtext)
+
+remotes::install_github('schuyler-smith/phylosmith') # Install pck phylosmith
+library(phylosmith)
+
+install.packages('devtools')
+library(devtools)
+install_github("pmartinezarbizu/pairwiseAdonis/pairwiseAdonis") # For pairwise testing after PERMANOVA 
+library(pairwiseAdonis)
+
+# Load the unrarified data with low sequences samples removed (generated in script part 1)
+ps.capis.unrar.few3 <- readRDS(here:: here("data", "ps_capis_unrar_ex.rds"))
+ps.puella.unrar.few3 <- readRDS(here:: here("data", "ps_puella_unrar_ex.rds"))
 
 # NMDS ordination of fish diet among reefs and zones
 set.seed(1911)
@@ -17,10 +33,7 @@ capis.ord
 capis.ord.jaccard <- ordinate(ps.capis.unrar.few3, "NMDS", "jaccard", binary = TRUE)
 capis.ord.jaccard
 
-# Install pck phylosmith
-library(sf)
-remotes::install_github('schuyler-smith/phylosmith')
-library(phylosmith)
+
 # Install helper function to change level order (Reef): set_sample_order() 
 #set_sample_order
 phyloseq::sample_names(ps.capis.unrar.few3)
@@ -35,7 +48,7 @@ ordered_reefs2 <-set_treatment_levels(ps.capis.unrar.few3, "Zone", order = c("SC
 ps.capis.unrar.few3 <- ordered_reefs2
 
 # Plot NMDS from phyloseq object
-# For jaccard plot use capis.ord.jaccard instead capis.ord
+# For jaccard plot replace capis.ord with capis.ord.jaccard 
 fig4a = plot_ordination(ps.capis.unrar.few3, capis.ord, type="sites", shape="Zone", color = "Reef") + theme_cowplot()+ # shape ="Zone" #type="sites", 
   geom_point(size = 2.8) + 
   stat_ellipse(aes(color = factor(Zone)), geom = "polygon", level=0.95, alpha=0, type = "t", size =.6, show.legend = F)+ 
@@ -72,7 +85,7 @@ pdataframe.bray = ldply(plist, function(x){
 names(pdataframe.bray)[1] = "method"
 
 #identify outliers in excel file
-write.csv(pdataframe.bray, file="NMDS_puella_coordinates.csv") 
+#write.csv(pdataframe.bray, file="NMDS_puella_coordinates.csv") 
 #Remove outliers from physeq object 
 ps_puella_boc_no_outlier_NMDS <- ps.puella.unrar.few3
 ps_puella_boc_no_outlier_NMDS <- subset_samples(ps_puella_boc_no_outlier_NMDS, sample_names(ps_puella_boc_no_outlier_NMDS) != "BCS19-3-13_ML2228")
@@ -102,6 +115,7 @@ ordered_reefs_puella2 <-set_treatment_levels(ps_puella_boc_no_outlier_NMDS, "Zon
 ps_puella_boc_no_outlier_NMDS <- ordered_reefs_puella2
 
 #plot NMDS from phyloseq object
+# For jaccard plot replace puella.ord with puella.ord.jaccard 
 fig4b = plot_ordination(ps_puella_boc_no_outlier_NMDS, puella.ord, type="sites", shape="Zone", color = "Reef") + theme_cowplot()+ # shape ="Zone" #type="sites", 
   geom_point(size = 2.8) + 
   stat_ellipse(aes(color = factor(Zone)), geom = "polygon", level=0.95, alpha=0, type = "t", size =.6, show.legend = F)+ 
@@ -119,20 +133,19 @@ fig4b
 
 # Combine 2 figures
 library(ggpubr)
-fig4_a_b_bray <- ggarrange(fig3a,fig3b,ncol=2,labels = c("A", "B"), common.legend = TRUE, legend = "right")
+fig4_a_b_bray <- ggarrange(fig4a,fig4b,ncol=2,labels = c("A", "B"), common.legend = TRUE, legend = "right")
 fig4_a_b_bray
 
-figS10_jaccard <- ggarrange(fig3a,fig3b,ncol=2,labels = c("A", "B"),common.legend = TRUE, legend = "right")
+figS10_jaccard <- ggarrange(fig4a,fig4b,ncol=2,labels = c("A", "B"),common.legend = TRUE, legend = "right")
 figS10_jaccard
 
 # Permanova 
 # Bray
-set.seed(1300)
-ps.capis.unrar.few3
 dist.capis.bray <- phyloseq::distance(ps.capis.unrar.few3, method = "bray")
 sampledf_capis <- data.frame(sample_data(ps.capis.unrar.few3))
 
 # Zone
+set.seed(1300)
 permanova_capis <- adonis2(dist.capis.bray ~ Zone, data = sampledf_capis, permutations = 10000)
 permanova_capis
 
@@ -144,9 +157,10 @@ permanova_capis
 # Jaccard
 dist.capis.jaccard <- phyloseq::distance(ps.capis.unrar.few3, method = "jaccard", binary = TRUE)
 #sampledf_capis <- data.frame(sample_data(ps.capis.unrar.few3))
-set.seed(1300)
+
 
 # Zone
+set.seed(1300)
 permanova_capis2 = adonis2(dist.capis.jaccard ~ Zone, data = sampledf_capis, permutations = 10000)
 permanova_capis2
 
@@ -154,14 +168,13 @@ permanova_capis2
 permanova_capis2 = adonis2(dist.capis.jaccard ~ Zone/Reef, data = sampledf_capis, by = "terms", permutations = 10000)
 permanova_capis2
 
-
 # Permanova H.puella
 # Bray
-set.seed(1300)
 dist_puella_bray <- phyloseq::distance(ps_puella_boc_no_outlier_NMDS, method = "bray")
 sampledf_puella <- data.frame(sample_data(ps_puella_boc_no_outlier_NMDS))
 
 # Zone
+set.seed(1300)
 permanova_puella = adonis2(dist_puella_bray ~ Zone, data = sampledf_puella, permutations = 10000)
 permanova_puella 
 
@@ -170,23 +183,18 @@ permanova_puella = adonis2(dist_puella_bray ~ Zone/Reef, data = sampledf_puella,
 permanova_puella 
 
 # Jaccard
-set.seed(1300)
 dist_puella_jaccard <- phyloseq::distance(ps_puella_boc_no_outlier_NMDS, method = "jaccard", binary = TRUE)
 #sampledf_puella <- data.frame(sample_data(ps_puella_boc_no_outlier_NMDS))
 permanova_puella2 = adonis2(dist_puella_jaccard ~ Zone, data = sampledf_puella, permutations = 10000)
 permanova_puella2 
 
 # Zone with Reef nested within Zone
+set.seed(1300)
 permanova_puella2 = adonis2(dist_puella_jaccard ~ Zone/Reef, data = sampledf_puella, by = "terms", permutations = 10000)
 permanova_puella2 
 
-# Posthoc using pairwiseAdonis function:
-install.packages('devtools')
-library(devtools)
-install_github("pmartinezarbizu/pairwiseAdonis/pairwiseAdonis")
-library(pairwiseAdonis)
-
-# PAIRWISE PERMANOVA (Low vs. high cover inside bay - cover model)
+# Posthoc using pairwiseAdonis function
+# Pairwise PERMANOVA (Low vs. high cover inside bay - cover model)
 # Bray C.capistratus
 # Inner bay vs inner bay disturbed
 # Remove data of the zone not included in pairwise comparison
@@ -259,10 +267,9 @@ pairwise.adonis(type.jaccard_dist_out, factors = sampledf_dist_out_capis$Zone,
                 p.adjust.m = "bonferroni")
 
 
-
 # PAIRWISE PERMANOVA 
 # Bray H. puella
-#Inner bay vs inner bay disturbed
+# Inner bay vs inner bay disturbed
 # Remove data of the Zone not included in pairwise comparison
 ps_puella_boc_no_outlier_NMDS_inner <- subset_samples(ps_puella_boc_no_outlier_NMDS, Zone != "Outer bay")
 type.bray_inner_puella <- phyloseq::distance(ps_puella_boc_no_outlier_NMDS_inner, method = "bray")
@@ -328,13 +335,108 @@ pairwise.adonis(type.jaccard_in_out_puella, factors = sampledf_in_out_puella$Zon
 ps_puella_boc_no_outlier_NMDS_dist_out <- subset_samples(ps_puella_boc_no_outlier_NMDS, Zone != "Inner bay")
 type.jaccard_dist_out_puella <- phyloseq::distance(ps_puella_boc_no_outlier_NMDS_dist_out, method = "jaccard", binary = T)
 sampledf_dist_out_puella <- data.frame(sample_data(ps_puella_boc_no_outlier_NMDS_dist_out))
-#check data that contains only 2 zones
+# Check data that contains only 2 zones
 sampledf_dist_out_puella
 set.seed(10)
 pairwise.adonis(type.jaccard_dist_out_puella, factors = sampledf_dist_out_puella$Zone,
                 p.adjust.m = "bonferroni")
 
 
+########################################################################
+# Plot stacked barcharts of diet composition - Figure 4 panels C and D - 
+########################################################################
+# C.capistratus stacked barchart by phylum (relative abundance)
+# Melt to long format (for ggplot) 
+# Prune out phyla below 2% in each sample
+# Plot the clean, unrarefied metazoan data 
+# Load the clean data for both species
+ps.capis.unrar <- readRDS(here:: here("data", "bocas_capis_metazoa_clean_unrar.rds"))
+ps.puella.unrar <- readRDS(here:: here("data", "bocas_puella_metazoa_clean_unrar.rds")) 
+
+capis_phylum <- ps.capis.unrar %>%  
+  tax_glom(taxrank = "Phylum") %>%                     # agglomerate at phylum level
+  transform_sample_counts(function(x) {x/sum(x)} ) %>% # Transform to rel. abundance
+  psmelt() %>%                                         # Melt to long format
+  filter(Abundance > 0.02) %>%                         # Filter out low abundance taxa
+  arrange(Phylum)                                      # Sort data frame alphabetically by phylum
+
+level_order <- c('SCR', 'PPR', 'CCR', 'ALR', 'SIS', 'ROL','PST', 'RNW', 'PBL')
+ 
+font_theme = theme(
+  axis.title.x = element_text(size = 14),
+  axis.text.x = element_text(size = 8),
+  axis.title.y = element_text(size = 14),
+  axis.text.y = element_text(size =8))
+
+# Set colors for plotting
+phylum_colors <- c(
+  "mediumaquamarine", "coral1", "lightsalmon1", "lightgrey", "lightgoldenrod3", "plum1",
+  "darkslategrey", "yellow1", "papayawhip", "lightgoldenrod1", "mediumpurple3", "red", "blue", "white", "green"
+)
+
+# # Plot Fig.4 panel C 
+fig4C <-ggplot(capis_phylum, aes(x = factor(Reef, level = level_order), y = Abundance, fill = Phylum)) +       
+  geom_bar(stat = "identity", position = "fill") +  
+  scale_fill_manual(values = phylum_colors) +
+  scale_x_discrete("Reef", expand = waiver(), position = "bottom",drop = FALSE
+  ) +
+  theme_cowplot()+
+  font_theme+
+  guides(fill = guide_legend(reverse = TRUE, keywidth = 1, keyheight = 1)) +
+  ylab("Relative Abundance (Phylum > 2%) \n") +
+  ggtitle("*Chaetodon capistratus*<br>Diet composition") +
+  theme(plot.title = element_markdown())+
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), 
+        panel.background = element_rect(fill = "transparent", colour = NA), 
+        plot.background = element_rect(fill = "transparent", colour = NA), 
+        panel.border = element_rect(fill = NA, color = "black"))
+fig4C
+
+# H.puella
+# Pull out only Arthropods
+arthro <- subset_taxa(ps.puella.unrar, Phylum=="Arthropoda")
+arthro
+
+#remove empty samples (columns)
+arthro<-prune_samples(sample_sums(arthro) > 0, arthro)
+
+Puella_art <-  arthro %>%  
+  tax_glom(taxrank = "Genus") %>%                     # agglomerate at phylum level
+  transform_sample_counts(function(x) {x/sum(x)} ) %>% # Transform to rel. abundance
+  psmelt() %>%                                         # Melt to long format
+  filter(Abundance > 0.02) %>%                         # Filter out low abundance taxa
+  arrange(Genus)                                      # Sort data frame alphabetically by phylum
+
+# Set colors for plotting
+genus_colors <- c("plum2","lightgoldenrod4","gold4","indianred4","lightcoral", "palevioletred3", "orchid4", "indianred", "lightcyan", "mediumpurple4", "indianred1", "darksalmon", "salmon3",
+                  "darkslategray1", "lightblue3"  
+)
+
+
+# Plot Fig.4 panel D
+fig4D <- ggplot(Puella_art, aes(x = factor(Reef, level = level_order), y = Abundance, fill = Genus)) +       
+  geom_bar(stat = "identity", position = "fill") + 
+  scale_fill_manual(values = genus_colors) +
+  scale_x_discrete("Reef", expand = waiver(), position = "bottom",
+                   drop = FALSE
+  ) +
+  theme_cowplot()+
+  font_theme+
+  guides(fill = guide_legend(reverse = TRUE, keywidth = 1, keyheight = 1)) +
+  ylab("Relative Abundance (Genus > 2%) \n") +
+  ggtitle("*Hypoplectrus puella*<br>Diet composition ") +
+  theme(plot.title = element_markdown()) +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_rect(fill = "transparent",colour = NA), plot.background = element_rect(fill = "transparent",colour = NA),
+        panel.border = element_rect(fill = NA, color="black"), legend.background = element_rect(fill = "transparent", color=NA), legend.key = element_rect(fill = "transparent", color = NA))
+fig4D
+
+
+# Combine 2 figures
+library(ggpubr)
+#pdf("~/Desktop/Fig_4.pdf", height=6, width=16, bg = "white")
+fig4CD <- ggarrange(fig4C ,fig4D, ncol=2, labels = c("A", "B"),common.legend = FALSE, legend = "right")
+fig4CD
+dev.off()
 
 
 
