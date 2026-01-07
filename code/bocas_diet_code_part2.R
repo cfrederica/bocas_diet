@@ -1,3 +1,4 @@
+#Diet composition PERMANOVA and Figure 4 (Panels A,B,C,D) NMDS (A,B) and stacked barcharts (C,D)
 
 # --- Load Required Packages ---
 
@@ -35,7 +36,6 @@ capis.ord.jaccard
 
 
 # Install helper function to change level order (Reef): set_sample_order() 
-#set_sample_order
 phyloseq::sample_names(ps.capis.unrar.few3)
 ordered_obj <- set_sample_order(ps.capis.unrar.few3, "Reef")
 phyloseq::sample_names(ordered_obj)
@@ -48,7 +48,7 @@ ordered_reefs2 <-set_treatment_levels(ps.capis.unrar.few3, "Zone", order = c("SC
 ps.capis.unrar.few3 <- ordered_reefs2
 
 # Plot NMDS from phyloseq object
-# For jaccard plot replace capis.ord with capis.ord.jaccard 
+# For Jaccard plot replace capis.ord with capis.ord.jaccard 
 fig4a = plot_ordination(ps.capis.unrar.few3, capis.ord, type="sites", shape="Zone", color = "Reef") + theme_cowplot()+ # shape ="Zone" #type="sites", 
   geom_point(size = 2.8) + 
   stat_ellipse(aes(color = factor(Zone)), geom = "polygon", level=0.95, alpha=0, type = "t", size =.6, show.legend = F)+ 
@@ -84,9 +84,9 @@ pdataframe.bray = ldply(plist, function(x){
 })
 names(pdataframe.bray)[1] = "method"
 
-#identify outliers in excel file
+# Identify outliers in excel file
 #write.csv(pdataframe.bray, file="NMDS_puella_coordinates.csv") 
-#Remove outliers from physeq object 
+# Remove outliers from physeq object 
 ps_puella_boc_no_outlier_NMDS <- ps.puella.unrar.few3
 ps_puella_boc_no_outlier_NMDS <- subset_samples(ps_puella_boc_no_outlier_NMDS, sample_names(ps_puella_boc_no_outlier_NMDS) != "BCS19-3-13_ML2228")
 ps_puella_boc_no_outlier_NMDS <- subset_samples(ps_puella_boc_no_outlier_NMDS, sample_names(ps_puella_boc_no_outlier_NMDS) != "BCS19-5-8_ML2273")
@@ -102,7 +102,7 @@ puella.ord
 puella.ord.jaccard <- ordinate(ps_puella_boc_no_outlier_NMDS, "NMDS", "jaccard", binary = TRUE)
 puella.ord.jaccard
 
-#order Reef and Zone
+# Order Reef and Zone
 phyloseq::sample_names(ps_puella_boc_no_outlier_NMDS)
 ordered_obj_puella <- set_sample_order(ps_puella_boc_no_outlier_NMDS, "Reef")
 phyloseq::sample_names(ordered_obj_puella)
@@ -114,8 +114,8 @@ phyloseq::sample_names(ordered_obj_puella2)
 ordered_reefs_puella2 <-set_treatment_levels(ps_puella_boc_no_outlier_NMDS, "Zone", order = c("SCR", "Outer bay", "Inner bay","Inner bay disturbed"))
 ps_puella_boc_no_outlier_NMDS <- ordered_reefs_puella2
 
-#plot NMDS from phyloseq object
-# For jaccard plot replace puella.ord with puella.ord.jaccard 
+# Plot NMDS from phyloseq object
+# For Jaccard plot replace puella.ord with puella.ord.jaccard 
 fig4b = plot_ordination(ps_puella_boc_no_outlier_NMDS, puella.ord, type="sites", shape="Zone", color = "Reef") + theme_cowplot()+ # shape ="Zone" #type="sites", 
   geom_point(size = 2.8) + 
   stat_ellipse(aes(color = factor(Zone)), geom = "polygon", level=0.95, alpha=0, type = "t", size =.6, show.legend = F)+ 
@@ -374,7 +374,7 @@ phylum_colors <- c(
   "darkslategrey", "yellow1", "papayawhip", "lightgoldenrod1", "mediumpurple3", "red", "blue", "white", "green"
 )
 
-# # Plot Fig.4 panel C 
+# Plot Fig.4 panel C 
 fig4C <-ggplot(capis_phylum, aes(x = factor(Reef, level = level_order), y = Abundance, fill = Phylum)) +       
   geom_bar(stat = "identity", position = "fill") +  
   scale_fill_manual(values = phylum_colors) +
@@ -397,7 +397,7 @@ fig4C
 arthro <- subset_taxa(ps.puella.unrar, Phylum=="Arthropoda")
 arthro
 
-#remove empty samples (columns)
+# Remove empty samples (columns)
 arthro<-prune_samples(sample_sums(arthro) > 0, arthro)
 
 Puella_art <-  arthro %>%  
