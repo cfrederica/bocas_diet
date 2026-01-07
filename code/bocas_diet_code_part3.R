@@ -99,7 +99,7 @@ prediction_data$Zone <- factor(prediction_data$Zone,
                                levels = c("Outer bay", "Inner bay", "Inner bay disturbed"))
 
 # Create the plot
-Fig_3A <- ggplot() +
+fig3A <- ggplot() +
   geom_line(data = prediction_data, aes(x = Rings_average, y = TL_mm, color = Zone), linewidth = 1.5) +
   facet_wrap(~ Species, scales = "free") +
   labs(x = "Age (years)", y = "Total length (mm)", 
@@ -108,7 +108,7 @@ Fig_3A <- ggplot() +
   theme(legend.position = "bottom",
         strip.text.x = element_text(size = 10, face = "italic")) +
   scale_color_manual(values = zone_colors)
-Fig_3A
+fig3A
 
 
 # Extract and print parameters
@@ -209,7 +209,7 @@ plot_data <- all_boot_results %>%
 plot_data$Zone <- factor(plot_data$Zone,
                          levels = c("Outer bay", "Inner bay", "Inner bay disturbed"))
 
-Fig_3B <- ggplot(plot_data, aes(x = Zone, y = Mean, color = Zone)) +
+fig3B <- ggplot(plot_data, aes(x = Zone, y = Mean, color = Zone)) +
   geom_errorbar(aes(ymin = Lower, ymax = Upper), width = 0, size = 1) +
   geom_point(size = 3) +
   geom_point(size = 3, color = "black", shape = 21, fill = NA) + 
@@ -230,7 +230,7 @@ Fig_3B <- ggplot(plot_data, aes(x = Zone, y = Mean, color = Zone)) +
   ) +
   scale_color_manual(values = zone_colors)
 
-Fig_3B 
+fig3B 
 
 # Function to check for significant differences
 check_significance <- function(boot_data, param) {
@@ -309,14 +309,14 @@ DT::datatable(results_table, escape = FALSE)
 ##### Combine both plots together in Patchwork---------------------------------
 
 # # Modify the plots to use a shared legend
-Fig_3A <- Fig_3A +
+fig3A <- fig3A +
   theme(legend.position = "none")
 
-Fig_3B <- Fig_3B +
+fig3B <- fig3B +
  theme(legend.position = "none")
 
 # Combine the plots with patchwork
-combined_plot <- (Fig_3A / Fig_3B) +
+combined_plot <- (fig3A / fig3B) +
   plot_layout(heights = c(1.5, 2)) +  # Set the height ratio
   plot_annotation(tag_levels = 'A') &  # Add labels A and B to the plots
   theme(plot.tag = element_text(size = 16, face = "bold"))
