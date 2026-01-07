@@ -351,7 +351,7 @@ fig_overall
 fig_overall <-annotate_figure(fig_overall, top = text_grob("Fish condition across zones", 
                                                            face = "bold", size = 16))
 # Save plot as PDF
-pdf("Fish_condition_overall.pdf", height=10, width=6)
+pdf("Fig_S7.pdf", height=10, width=6)
 fig_overall
 dev.off()
 
