@@ -2,10 +2,7 @@
 
 **Description**  
 
-**This repository contains the R scripts used to perform the analyses for the study _Dietary resilience of coral reef fishes to habitat degradation_.** Clever et al. 2025, Journal of Animal Ecology. The code in the `code/` folder performs data inspection, cleaning, analysis, and figure generation. This README is a preliminary overview 
-
-- Repo structure: scripts in `code/`
-
+**This repository contains the R scripts used to perform the analyses for the study _Dietary resilience of coral reef fishes to habitat degradation_.** Clever et al. 2025, Journal of Animal Ecology. 
 ## Data availability
 - The data is available on Dryad: [10.5061/dryad.qz612jmpz](https://doi.org/10.5061/dryad.qz612jmpz)
 
