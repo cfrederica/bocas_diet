@@ -1,4 +1,3 @@
-# Bocas diet analysis — code
 
 **Description**  
 
