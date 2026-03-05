@@ -1,16 +1,13 @@
 # Bocas diet analysis — code
 
 **Description**  
-**Status — work in progress**
-
-**The code is currently incomplete and is being actively updated.** A citable snapshot (GitHub release and DOI) will be created and linked here and on Dryad upon formal publication. Last updated: 2025-12-18 
 
 **This repository contains the R scripts used to perform the analyses for the study _Dietary resilience of coral reef fishes to habitat degradation_.** Clever et al. 2025, Journal of Animal Ecology. The code in the `code/` folder performs data inspection, cleaning, analysis, and figure generation. This README is a preliminary overview 
 
-- Repo structure: scripts live in `code/`
+- Repo structure: scripts in `code/`
 
 ## Data availability
-- Data are not included in this repository. The dataset is available on Dryad: [10.5061/dryad.qz612jmpz](https://doi.org/10.5061/dryad.qz612jmpz)
+- The data is available on Dryad: [10.5061/dryad.qz612jmpz](https://doi.org/10.5061/dryad.qz612jmpz)
 
 ## Repository layout
 - `code/`
